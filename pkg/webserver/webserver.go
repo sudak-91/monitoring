@@ -7,23 +7,27 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	clientservice "github.com/sudak-91/monitoring/internal/pkg/client_service"
 	"nhooyr.io/websocket"
 )
 
 type Server struct {
-	Mutex sync.RWMutex
-	users map[uuid.UUID]*WebUser
-	ctx   context.Context
+	Mutex      sync.RWMutex
+	users      map[uuid.UUID]*clientservice.ClientService
+	ctx        context.Context
+	updateData chan interface{}
 }
 
 func NewServer(ctx context.Context) *Server {
 	var Server Server
-	Server.users = make(map[uuid.UUID]*WebUser)
+	Server.users = make(map[uuid.UUID]*clientservice.ClientService)
 	Server.ctx = ctx
+	Server.updateData = make(chan interface{}, 5)
 	return &Server
 }
 
 func (s *Server) Start() {
+	go s.Update()
 	log.Println("Start HttpServer")
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("./template")))
@@ -35,13 +39,11 @@ func (s *Server) Start() {
 			log.Fatal(err)
 		}
 		log.Println("Connect Done")
-		var webUser WebUser
-		webUser.Conn = wsConnection
-		webUser.ctx, webUser.cancel = context.WithCancel(s.ctx)
 		uuid := uuid.New()
-		s.users[uuid] = &webUser
+		client := clientservice.NewClientService(s.ctx, uuid, wsConnection, s.updateData)
+		s.users[uuid] = client
 		s.Mutex.Unlock()
-		go webUser.Run(uuid.String())
+		go client.Run()
 		/*defer wsConnection.Close(websocket.StatusInternalError, "falling")
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 		defer cancel()
@@ -57,4 +59,10 @@ func (s *Server) Start() {
 		log.Fatal(err)
 	}
 
+}
+
+func (s *Server) changeUUID(oldUUID uuid.UUID, newUUID uuid.UUID) error {
+	s.users[newUUID] = s.users[oldUUID]
+	delete(s.users, oldUUID)
+	return nil
 }

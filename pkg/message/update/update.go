@@ -1,11 +1,9 @@
 package message
 
-import "github.com/google/uuid"
-
-type Update struct {
-	NewConnection *NewConnection
+type Updates interface {
+	SendUUID()
 }
 
-type NewConnection struct {
-	UUID uuid.UUID
+type Update struct {
+	SendUUID *SendUUID
 }

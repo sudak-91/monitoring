@@ -2,36 +2,25 @@ package messageservice
 
 import (
 	"context"
-	"log"
 
+	"github.com/google/uuid"
 	message "github.com/sudak-91/monitoring/pkg/message/update"
+	"github.com/sudak-91/wasmhtml/cookie"
 )
 
 type MessageService struct {
-	ctx           context.Context
-	updateMessage chan message.Update
-
-	updateService updateService
 }
 
 func NewMessageService(ctx context.Context, update chan message.Update) *MessageService {
 	var s MessageService
-	s.ctx = ctx
-	s.updateMessage = update
-	s.updateService = updateService{}
-
 	return &s
 }
 
-func (s *MessageService) Update() {
-	for {
-		select {
-		case data := <-s.updateMessage:
-			s.updateService.router(data)
-		case <-s.ctx.Done():
-			log.Println("Service is down")
-			break
-		}
+func (s *MessageService) Update(data message.Update, uuid *uuid.UUID, cookie *cookie.Cookie) {
+	switch {
+	case data.SendUUID != nil:
+		s.SendUUIDService(*data.SendUUID, uuid, cookie)
+		return
 	}
 
 }

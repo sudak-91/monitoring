@@ -1,5 +1,6 @@
 package message
 
 // Get users info
-type GetInfoCommand struct {
+type GetUUID struct {
+	Info string
 }
