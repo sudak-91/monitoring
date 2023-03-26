@@ -6,6 +6,8 @@ import (
 
 	"github.com/sudak-91/monitoring/internal/pkg/client"
 	"github.com/sudak-91/monitoring/internal/pkg/client/command"
+	"github.com/sudak-91/monitoring/internal/pkg/client/render"
+	screen "github.com/sudak-91/monitoring/internal/pkg/client/render/template"
 	"github.com/sudak-91/wasmhtml/cookie"
 	"github.com/sudak-91/wasmhtml/element"
 )
@@ -27,16 +29,14 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
-	body := element.GetBody()     //Получение <BODY>
-	leftdiv := body.AddDiv()      //Создание дочернего <DIV>
-	leftdiv.Id = "lefyDiv"        //Добавление ID
-	leftdiv.AddClass("container") //Добавление клааса
-	rightdiv := body.AddDiv()
-	rightdiv.Id = "rightDiv"
-	rightdiv.InnerHtml = "Click me"
-	rightdiv.OnClick = "alert(\"tada\")"
-	rightdiv.AddClass("container")
-	body.Generate() //Генерация старницы
+	screenChan := make(chan string)
+	render := render.NewRender(ctx, screenChan)
+	MainPage := screen.NewMianPage()
+	render.AddScreen("main", MainPage)
+	go render.Run()
+	screenChan <- "main"
+	body := element.GetBody() //Получение <BODY>
+	body.Generate()           //Генерация старницы
 	<-ctx.Done()
 
 }

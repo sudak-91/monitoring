@@ -16,12 +16,12 @@ func (m *ClientService) Update(data command.Command) {
 		log.Println("GetUUID")
 	case data.SetUUID != nil:
 		log.Println("setUUID")
-		log.Println(m.UUID)
+		log.Println(m.client.UUID)
 		err := m.SetUUIDService(data.SetUUID.UUID)
 		if err != nil {
 			log.Println(err)
 		}
-		log.Println(m.UUID)
+		log.Println(m.client.UUID)
 		log.Println("finish")
 
 	}

@@ -2,7 +2,7 @@ package clientservice
 
 import (
 	"github.com/google/uuid"
-	serverupdates "github.com/sudak-91/monitoring/pkg/server_updates"
+	serverupdates "github.com/sudak-91/monitoring/pkg/server/updateservice"
 )
 
 func (m *ClientService) SetUUIDService(newUUID string) error {
@@ -12,10 +12,10 @@ func (m *ClientService) SetUUIDService(newUUID string) error {
 	}
 	var ChangeUUID serverupdates.ChangeUUID
 	ChangeUUID.NewID = id
-	ChangeUUID.OldID = m.UUID
+	ChangeUUID.OldID = m.client.UUID
 	m.serverUpdate <- ChangeUUID
-	m.UUID = id
-	m.IsUUIDTemp = false
+	m.client.UUID = id
+	m.client.IsUUIDTemp = false
 
 	return nil
 }

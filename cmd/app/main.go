@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 	"github.com/pkg/errors"
-	"github.com/sudak-91/monitoring/pkg/webserver"
+	"github.com/sudak-91/monitoring/pkg/server"
+	"github.com/sudak-91/monitoring/pkg/server/updateservice"
+	webservice "github.com/sudak-91/monitoring/pkg/server/web_service"
 )
 
 type NodeDef struct {
@@ -31,9 +34,16 @@ type OPCUAObjectData struct {
 }
 
 func main() {
-	ctx1 := context.Background()
-	Server := webserver.NewServer(ctx1)
-	go Server.Start()
+	log.Println("Star Monitoring Server")
+	MainCTX := context.Background()
+	server := server.NewServer(MainCTX)
+	updateData := make(chan any, 5)
+	log.Println("Create Web Service")
+	webService := webservice.NewWebService(MainCTX, updateData, server)
+	go webService.Run()
+	log.Println("Create Update Service")
+	updateService := updateservice.NewUpdateService(MainCTX, updateData, server)
+	go updateService.Update()
 	var (
 		endpoint = "opc.tcp://192.168.1.225:4840"
 		ctx      = context.Background()

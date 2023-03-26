@@ -11,14 +11,14 @@ import (
 
 func (m *ClientService) GetUUIDService() error {
 	var update message.Update
-	update.SendUUID = message.NewSendUUID(m.UUID)
+	update.SendUUID = message.NewSendUUID(m.client.UUID)
 	var data bytes.Buffer
 	encoder := gob.NewEncoder(&data)
 	err := encoder.Encode(update)
 	if err != nil {
 		return err
 	}
-	err = m.Conn.Write(context.TODO(), websocket.MessageBinary, data.Bytes())
+	err = m.client.Conn.Write(context.TODO(), websocket.MessageBinary, data.Bytes())
 	if err != nil {
 		return err
 	}
