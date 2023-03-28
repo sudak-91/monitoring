@@ -3,8 +3,9 @@ package command
 import "github.com/sudak-91/monitoring/internal/pkg/client"
 
 type Commands interface {
-	SetUUID()
-	GetUUID() string
+	SetUUID(uuid string) error
+	GetUUID() error
+	GetOpcUaNode() error
 }
 
 type Command struct {

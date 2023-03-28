@@ -2,8 +2,10 @@ package message
 
 type Updates interface {
 	SendUUID()
+	SendOpcNodes()
 }
 
 type Update struct {
-	SendUUID *SendUUID
+	SendUUID     *SendUUID
+	SendOpcNodes *SendOpcNodes
 }

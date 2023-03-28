@@ -9,22 +9,24 @@ import (
 	"github.com/google/uuid"
 	"github.com/sudak-91/monitoring/pkg/server"
 	clientservice "github.com/sudak-91/monitoring/pkg/server/client_service"
-
 	"nhooyr.io/websocket"
 )
 
+// Service for web socket connection
 type WebService struct {
 	Mutex      sync.RWMutex
 	ctx        context.Context
 	server     *server.Server
-	updateData chan interface{}
+	updateChan chan interface{}
+	clientChan chan any
 }
 
-func NewWebService(ctx context.Context, updateData chan any, server *server.Server) *WebService {
+func NewWebService(ctx context.Context, updateChan chan any, server *server.Server, clientChan chan any) *WebService {
 	var service WebService
 	service.ctx = ctx
 	service.server = server
-	service.updateData = updateData
+	service.updateChan = updateChan
+	service.clientChan = clientChan
 	return &service
 }
 
@@ -44,7 +46,7 @@ func (service *WebService) Run() {
 		client.UUID = uuid
 		client.IsUUIDTemp = true
 		client.Conn = wsConnection
-		cs := clientservice.NewClientService(service.ctx, &client, service.updateData)
+		cs := clientservice.NewClientService(service.ctx, &client, service.clientChan, service.updateChan)
 		service.server.Users[uuid] = &client
 		service.Mutex.Unlock()
 		go cs.Run()

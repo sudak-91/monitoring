@@ -7,7 +7,8 @@ import (
 	"github.com/sudak-91/monitoring/internal/pkg/client"
 	"github.com/sudak-91/monitoring/internal/pkg/client/command"
 	"github.com/sudak-91/monitoring/internal/pkg/client/render"
-	screen "github.com/sudak-91/monitoring/internal/pkg/client/render/template"
+	"github.com/sudak-91/monitoring/internal/pkg/client/screens"
+
 	"github.com/sudak-91/wasmhtml/cookie"
 	"github.com/sudak-91/wasmhtml/element"
 )
@@ -29,14 +30,15 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
-	screenChan := make(chan string)
-	render := render.NewRender(ctx, screenChan)
-	MainPage := screen.NewMianPage()
+	screenChan := make(chan interface{})
+	renderChan := make(chan interface{})
+	render := render.NewRender(ctx, renderChan, screenChan)
+	MainPage := screens.NewMainScreen(renderChan, screenChan, element.GetBody(), command)
 	render.AddScreen("main", MainPage)
 	go render.Run()
-	screenChan <- "main"
-	body := element.GetBody() //Получение <BODY>
-	body.Generate()           //Генерация старницы
+	renderChan <- "main"
+	//body := element.GetBody() //Получение <BODY>
+	//body.Generate()           //Генерация старницы
 	<-ctx.Done()
 
 }

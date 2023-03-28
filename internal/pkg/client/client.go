@@ -33,6 +33,7 @@ func (c *Client) Requst(data []byte) error {
 }
 
 func (c *Client) Run(done chan bool) {
+	log.Println("Start Client")
 	ctx, cancel := context.WithCancel(c.ctx)
 	conn, _, err := websocket.Dial(ctx, "ws://localhost:8000/ws", nil)
 	if err != nil {
@@ -42,6 +43,7 @@ func (c *Client) Run(done chan bool) {
 	}
 	c.ws = conn
 	done <- true
+	log.Println("Start polling")
 	for {
 		messageType, data, err := c.ws.Read(ctx)
 		if err != nil {
@@ -62,7 +64,7 @@ func (c *Client) Run(done chan bool) {
 			}
 			go c.messageService.Update(decodeData, &c.UUID, c.Cookie)
 		case <-ctx.Done():
-
+			log.Println("Context closed")
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package message
 
 type Command struct {
-	GetUUID *GetUUID
-	SetUUID *SetUUID
+	GetUUID      *GetUUID
+	SetUUID      *SetUUID
+	GetOpcUaNode *GetOpcUaNode
 }

@@ -10,32 +10,35 @@ import (
 	"github.com/sudak-91/monitoring/pkg/server"
 )
 
+// Service for connected users
+
 type ClientService struct {
-	serverUpdate chan interface{} //chan for communicate with server
-	client       *server.Client
-	ctx          context.Context
+	clientChan chan<- interface{} //chan for communicate with server
+	updateChan <-chan any
+	client     *server.Client
+	ctx        context.Context
 }
 
-func NewClientService(ctx context.Context, client *server.Client, serverUpdate chan any) *ClientService {
+func NewClientService(ctx context.Context, client *server.Client, clientChan chan<- any, updateChan <-chan any) *ClientService {
 	var cs ClientService
 	cs.ctx = ctx
 	cs.client = client
-	cs.serverUpdate = serverUpdate
+	cs.clientChan = clientChan
+	cs.updateChan = updateChan
 	return &cs
 
 }
 
 func (cs *ClientService) Run() {
 	ctx, cancel := context.WithCancel(cs.ctx)
-mailoop:
-	for {
-		select {
-		default:
+	go func() {
+		log.Println("Start read message")
+		for {
 			MessageType, data, err := cs.client.Conn.Read(ctx)
 			if err != nil {
 				log.Println(err)
 				cancel()
-				continue
+				break
 			}
 			log.Printf("%s get message %v\n", cs.client.UUID, MessageType)
 			log.Printf("%v", data)
@@ -48,10 +51,21 @@ mailoop:
 				log.Println(err)
 				continue
 			}
-			go cs.Update(msg)
-
+			go cs.messageRouter(msg)
+		}
+	}()
+	log.Println("Start Update Chan service")
+mailoop:
+	for {
+		select {
+		case data := <-cs.updateChan:
+			log.Println("Get data from updateChan")
+			go cs.updateRouter(data)
 		case <-ctx.Done():
+			log.Println("Connection is odne")
 			break mailoop
+		default:
+
 		}
 	}
 	log.Println("End")
