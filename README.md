@@ -8,10 +8,10 @@
 * UpdateServer
 
 
-При подключении web server записывает данные о клиенте, создает объект клиента и запускает client service который обрабатывает все данные на прием передачу
+При подключении web server записывает данные о клиенте, создает объект клиента и запускает client service который обрабатывает все данные на прием передачу.
 WebServer -> Client ->ClientService
 
-Взаимодействие между сервисами происходит по каналам
+Взаимодействие между сервисами происходит по каналам.
 ClientService -- *Clilent Chan*-->          UpdateService ---- *Update To OpcUA Chan*-----> OpcUa Service
 ClientService <- *Update To Client Chan*--  UpdateService       <--- *Opc Ua Chan*-----     OpcUa Service 
 
