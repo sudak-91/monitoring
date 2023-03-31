@@ -10,8 +10,6 @@ import (
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 	"github.com/pkg/errors"
-	message "github.com/sudak-91/monitoring/pkg/message/update"
-	"github.com/sudak-91/monitoring/pkg/server/updateservice"
 )
 
 type NodeDef struct {
@@ -28,14 +26,20 @@ type NodeDef struct {
 	Min         string
 	Max         string
 }
+
+type OPCNode struct {
+	Name string
+	ID   []byte
+}
+
 type OPCUAObjectData struct {
-	Name []string
+	Nodes []OPCNode
 }
 type OPCUAService struct {
 	opcuaChan  chan<- interface{}
 	updateChan <-chan interface{}
 	ctx        context.Context
-	c          *opcua.Client
+	OPCLient   *opcua.Client
 }
 
 func NewOpcUaService(ctx context.Context, opcuaChan chan<- interface{}, updateChan <-chan interface{}) *OPCUAService {
@@ -50,12 +54,14 @@ func (opc *OPCUAService) StartOPCUA() {
 	var (
 		endpoint = "opc.tcp://192.168.1.225:4840"
 	)
-	opc.c = opcua.NewClient(endpoint)
-	if err := opc.c.Connect(opc.ctx); err != nil {
+	opc.OPCLient = opcua.NewClient(endpoint)
+	if err := opc.OPCLient.Connect(opc.ctx); err != nil {
 		panic(err)
 	}
-	defer opc.c.CloseWithContext(opc.ctx)
-	for {
+	log.Println("OPC UA Server start")
+	//defer opc.c.CloseWithContext(opc.ctx)
+	//@TODO: Пока заблокированный цикл
+	/*for {
 		select {
 		case data := <-opc.updateChan:
 			log.Println("new update")
@@ -64,56 +70,63 @@ func (opc *OPCUAService) StartOPCUA() {
 			continue
 
 		}
-	}
+	}*/
 
 }
 
-func (opc *OPCUAService) router(data any) {
+/*func (opc *OPCUAService) router(data any) {
 	switch v := data.(type) {
 	case updateservice.GetOpcUaNode:
 		log.Println(v.Info)
 		go opc.GetNodes()
 
 	}
-}
+}*/
 
-func (opc *OPCUAService) GetNodes() {
-	var Names []string
+func (opc *OPCUAService) GetNodes() (OPCUAObjectData, error) {
+	//var Names []string
 	uid, err := ua.ParseNodeID("ns=0;i=84")
 	if err != nil {
 		panic(err)
 	}
-	node := opc.c.Node(uid)
+	node := opc.OPCLient.Node(uid)
 	nodesList, err := node.ReferencedNodesWithContext(context.Background(), id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
 	if err != nil {
 		panic(err)
 	}
+	var Nodes OPCUAObjectData
 	for _, v := range nodesList {
+		var node OPCNode
+		p, _ := v.ID.Encode()
+		node.ID = p
 		name, err := v.BrowseName()
 		if err != nil {
 			fmt.Println(err.Error())
-			return
+			return OPCUAObjectData{}, err
 		}
-		Names = append(Names, name.Name)
+		node.Name = name.Name
+		//Names = append(Names, name.Name)
 		fmt.Println(name.Name)
 		fmt.Printf("Roots node list is %v\n", v.ID)
-		subnodeLists, err := v.ReferencedNodesWithContext(context.Background(), id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
-		if err != nil {
-			continue
-		}
-	subnodeloop:
+		Nodes.Nodes = append(Nodes.Nodes, node)
+		//subnodeLists, err := v.ReferencedNodesWithContext(context.Background(), id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+		//if err != nil {
+		//	continue
+		//}
+		/*subnodeloop:
 		for _, k := range subnodeLists {
 			name, err := k.BrowseName()
 			if err != nil {
 				continue subnodeloop
 			}
 			fmt.Println(name.Name)
-		}
+		}*/
 	}
 
-	update := message.NewSendOpcNodes(Names)
+	/*update := message.NewSendOpcNodes(Names)
 	opc.opcuaChan <- update
-	log.Println("Send OPCUA Nodes to updater")
+	log.Println("Send OPCUA Nodes to updater")*/
+	return Nodes, nil
 }
 
 func (n NodeDef) Records() []string {

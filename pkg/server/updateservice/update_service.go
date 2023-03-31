@@ -1,15 +1,6 @@
 package updateservice
 
-import (
-	"context"
-	"log"
-
-	"github.com/google/uuid"
-	update "github.com/sudak-91/monitoring/pkg/message/update"
-	"github.com/sudak-91/monitoring/pkg/server"
-)
-
-type ChangeUUID struct {
+/*type ChangeUUID struct {
 	OldID uuid.UUID
 	NewID uuid.UUID
 }
@@ -24,10 +15,12 @@ type UpdateService struct {
 	opcuaChan         <-chan any
 	updateToClienChan chan<- any
 	updateToOpcUaChan chan<- any
-	server            *server.Server
+	server            *server.ClientList
+	OPCUAClient       *opcuaservice.OPCUAService
+	Client            *clientservice.ClientService
 }
 
-func NewUpdateService(ctx context.Context, clientChan <-chan any, opcuaChan <-chan any, updateToClientChan chan<- any, updateToOpcUaChan chan<- any, server *server.Server) *UpdateService {
+func NewUpdateService(ctx context.Context, clientChan <-chan any, opcuaChan <-chan any, updateToClientChan chan<- any, updateToOpcUaChan chan<- any, server *server.ClientList) *UpdateService {
 	var u UpdateService
 	u.ctx = ctx
 	u.clientChan = clientChan
@@ -58,12 +51,20 @@ func (s *UpdateService) Update() {
 func (s *UpdateService) clientRouter(data any) {
 	switch v := data.(type) {
 	case ChangeUUID:
-		err := s.changeUUID(v.OldID, v.NewID)
-		if err != nil {
-			log.Println(err)
-		}
+
 	case GetOpcUaNode:
-		s.updateToOpcUaChan <- v
+		//s.updateToOpcUaChan <- v
+		/*Nodes, err := s.OPCUAClient.GetNodes()
+		if err!=nil{
+			log.Println(err.Error())
+			return
+		}
+		data, err:=message.EncodeData(Nodes)
+		if err!=nil{
+			log.Println(err.Error())
+			return
+		}
+
 	}
 }
 
@@ -74,10 +75,4 @@ func (s *UpdateService) opcuaRouter(data any) {
 		s.updateToClienChan <- v
 		log.Println("sendOPCUa Node")
 	}
-}
-
-func (s *UpdateService) changeUUID(oldUUID uuid.UUID, newUUID uuid.UUID) error {
-	s.server.Users[newUUID] = s.server.Users[oldUUID]
-	delete(s.server.Users, oldUUID)
-	return nil
-}
+}*/

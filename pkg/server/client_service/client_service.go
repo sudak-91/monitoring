@@ -7,24 +7,29 @@ import (
 	"log"
 
 	message "github.com/sudak-91/monitoring/pkg/message/command"
-	"github.com/sudak-91/monitoring/pkg/server"
+	"github.com/sudak-91/monitoring/pkg/server/clients"
+	opcuaservice "github.com/sudak-91/monitoring/pkg/server/opcua_service"
 )
 
 // Service for connected users
 
 type ClientService struct {
-	clientChan chan<- interface{} //chan for communicate with server
-	updateChan <-chan any
-	client     *server.Client
-	ctx        context.Context
+	clientChan   chan<- interface{} //chan for communicate with server
+	updateChan   <-chan any
+	client       *clients.Client
+	clientList   *clients.ClientList
+	opcuaService *opcuaservice.OPCUAService
+	ctx          context.Context
 }
 
-func NewClientService(ctx context.Context, client *server.Client, clientChan chan<- any, updateChan <-chan any) *ClientService {
+func NewClientService(ctx context.Context, client *clients.Client, clientChan chan<- any, updateChan <-chan any, clientList *clients.ClientList, opcuaService *opcuaservice.OPCUAService) *ClientService {
 	var cs ClientService
 	cs.ctx = ctx
 	cs.client = client
+	cs.clientList = clientList
 	cs.clientChan = clientChan
 	cs.updateChan = updateChan
+	cs.opcuaService = opcuaService
 	return &cs
 
 }

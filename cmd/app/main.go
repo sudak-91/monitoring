@@ -5,27 +5,26 @@ import (
 	"log"
 
 	"github.com/sudak-91/monitoring/pkg/server"
+	"github.com/sudak-91/monitoring/pkg/server/clients"
 	opcuaservice "github.com/sudak-91/monitoring/pkg/server/opcua_service"
-	"github.com/sudak-91/monitoring/pkg/server/updateservice"
-	webservice "github.com/sudak-91/monitoring/pkg/server/web_service"
 )
 
 func main() {
 	log.Println("Star Monitoring Server")
 	MainCTX := context.Background()
-	server := server.NewServer(MainCTX)
+	ClientList := clients.NewClientList()
 	updateToClientChan := make(chan any, 5)
 	updateToOpcUaChan := make(chan any, 6)
 	opcuaChan := make(chan any, 5)
 	clientChan := make(chan any, 5)
 	log.Println("Create Web Service")
-	webService := webservice.NewWebService(MainCTX, updateToClientChan, server, clientChan)
-	go webService.Run()
+	webService := server.NewWebService(MainCTX, updateToClientChan, clientChan, ClientList)
 	log.Println("Create Update Service")
-	updateService := updateservice.NewUpdateService(MainCTX, clientChan, opcuaChan, updateToClientChan, updateToOpcUaChan, server)
-	go updateService.Update()
+	//updateService := updateservice.NewUpdateService(MainCTX, clientChan, opcuaChan, updateToClientChan, updateToOpcUaChan, ClientList)
+	//go updateService.Update()
 	opcuaservice := opcuaservice.NewOpcUaService(MainCTX, opcuaChan, updateToOpcUaChan)
-	go opcuaservice.StartOPCUA()
+	opcuaservice.StartOPCUA()
+	go webService.Run(opcuaservice)
 
 	/*mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -1,21 +1,15 @@
 package clientservice
 
-import (
-	"github.com/google/uuid"
-	serverupdates "github.com/sudak-91/monitoring/pkg/server/updateservice"
-)
+import "github.com/google/uuid"
 
-func (m *ClientService) SetUUIDHandle(newUUID string) error {
-	id, err := uuid.Parse(newUUID)
+func (m *ClientService) SetUUIDHandle(UUID string) error {
+	newUUID, err := uuid.Parse(UUID)
 	if err != nil {
-		return nil
+		return err
 	}
-	var ChangeUUID serverupdates.ChangeUUID
-	ChangeUUID.NewID = id
-	ChangeUUID.OldID = m.client.UUID
-	m.clientChan <- ChangeUUID
-	m.client.UUID = id
-	m.client.IsUUIDTemp = false
-
+	if err = m.clientList.ChangeUUID(newUUID, m.client.UUID); err != nil {
+		return err
+	}
+	m.client.UUID = newUUID
 	return nil
 }
