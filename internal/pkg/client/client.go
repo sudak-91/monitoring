@@ -21,10 +21,11 @@ type Client struct {
 	UUID           uuid.UUID
 }
 
-func NewClient(ctx context.Context, cookie *cookie.Cookie) *Client {
+func NewClient(ctx context.Context, cookie *cookie.Cookie, messageService *clientService.MessageService) *Client {
 	var c Client
 	c.ctx = ctx
 	c.Cookie = cookie
+	c.messageService = messageService
 	return &c
 }
 

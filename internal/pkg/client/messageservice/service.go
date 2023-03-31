@@ -10,10 +10,12 @@ import (
 )
 
 type MessageService struct {
+	messageServiceChan chan interface{}
 }
 
-func NewMessageService(ctx context.Context, update chan message.Update) *MessageService {
+func NewMessageService(ctx context.Context, messageServiceChan chan interface{}) *MessageService {
 	var s MessageService
+	s.messageServiceChan = messageServiceChan
 	return &s
 }
 
@@ -27,6 +29,7 @@ func (s *MessageService) Update(data message.Update, uuid *uuid.UUID, cookie *co
 			log.Println(v.Name)
 			log.Println(v.ID)
 		}
+		s.messageServiceChan <- data.SendOpcNodes
 	}
 
 }

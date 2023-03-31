@@ -6,6 +6,7 @@ import (
 
 	"github.com/sudak-91/monitoring/internal/pkg/client"
 	"github.com/sudak-91/monitoring/internal/pkg/client/command"
+	"github.com/sudak-91/monitoring/internal/pkg/client/messageservice"
 	"github.com/sudak-91/monitoring/internal/pkg/client/render"
 	"github.com/sudak-91/monitoring/internal/pkg/client/screens"
 
@@ -16,7 +17,9 @@ import (
 func main() {
 	ctx := context.Background()
 	cookie := cookie.NewCookie()
-	client := client.NewClient(ctx, cookie)
+	messageServceChan := make(chan interface{})
+	MessageService := messageservice.NewMessageService(ctx, messageServceChan)
+	client := client.NewClient(ctx, cookie, MessageService)
 	done := make(chan bool)
 	go client.Run(done)
 	<-done
@@ -32,7 +35,7 @@ func main() {
 	}
 	screenChan := make(chan interface{})
 	renderChan := make(chan interface{})
-	render := render.NewRender(ctx, renderChan, screenChan)
+	render := render.NewRender(ctx, renderChan, screenChan, messageServceChan)
 	MainPage := screens.NewMainScreen(renderChan, screenChan, element.GetBody(), command)
 	render.AddScreen("main", MainPage)
 	go render.Run()
