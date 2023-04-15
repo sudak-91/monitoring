@@ -13,6 +13,10 @@ import (
 	"nhooyr.io/websocket"
 )
 
+type Requester interface {
+	Request(data []byte) error
+}
+
 type Client struct {
 	ws             *websocket.Conn
 	messageService *clientService.MessageService
@@ -29,7 +33,7 @@ func NewClient(ctx context.Context, cookie *cookie.Cookie, messageService *clien
 	return &c
 }
 
-func (c *Client) Requst(data []byte) error {
+func (c *Client) Request(data []byte) error {
 	return c.ws.Write(c.ctx, websocket.MessageBinary, data)
 }
 

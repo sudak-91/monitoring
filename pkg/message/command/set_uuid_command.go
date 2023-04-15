@@ -4,8 +4,8 @@ type SetUUID struct {
 	UUID string
 }
 
-func NewSetUUID(uuid string) *SetUUID {
-	var s SetUUID
-	s.UUID = uuid
-	return &s
+func SetUUIDCommand(uuid string) Command {
+	var cmd Command
+	cmd.SetUUID = &SetUUID{UUID: uuid}
+	return cmd
 }

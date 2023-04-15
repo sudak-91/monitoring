@@ -10,6 +10,7 @@ import (
 )
 
 func (m *ClientService) messageRouter(data command.Command) {
+	log.Println("StartMessageRouting")
 	switch {
 	case data.GetUUID != nil:
 		err := m.GetUUIDHandle()
@@ -34,6 +35,14 @@ func (m *ClientService) messageRouter(data command.Command) {
 			log.Println(err)
 		}
 		log.Println("Command send")
+	case data.GetSubNode != nil:
+		log.Println("GetSubNode Commnd")
+		log.Println(m.client.UUID)
+		err := m.GetSubNodeHandle(data.GetSubNode.ParentID, data.GetSubNode.ParentNodeID, data.GetSubNode.ParentNodeNamespace)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
 	}
 }
 

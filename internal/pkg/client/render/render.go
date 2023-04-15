@@ -5,12 +5,10 @@ import (
 	"log"
 
 	"github.com/sudak-91/monitoring/internal/pkg/client/screens"
-	message "github.com/sudak-91/monitoring/pkg/message/update"
-	"github.com/sudak-91/wasmhtml"
 )
 
 type Render struct {
-	ScreenList         map[string]interface{}
+	ScreenList         map[string]screens.Screens
 	renderChan         <-chan interface{}
 	screenChan         chan<- interface{}
 	messageServiceChan chan interface{}
@@ -19,13 +17,13 @@ type Render struct {
 
 type ActualScreen struct {
 	Init           bool
-	Screen         interface{}
+	Screen         screens.Screens
 	CancelFunction context.CancelFunc
 }
 
 func NewRender(ctx context.Context, renderChan <-chan interface{}, screenChan chan<- interface{}, messageServiceChan chan interface{}) *Render {
 	var r Render
-	r.ScreenList = make(map[string]interface{})
+	r.ScreenList = make(map[string]screens.Screens)
 	r.ctx = ctx
 	r.renderChan = renderChan
 	r.screenChan = screenChan
@@ -33,7 +31,7 @@ func NewRender(ctx context.Context, renderChan <-chan interface{}, screenChan ch
 	return &r
 }
 
-func (r *Render) AddScreen(key string, screen screens.Renderer) {
+func (r *Render) AddScreen(key string, screen screens.Screens) {
 	r.ScreenList[key] = screen
 }
 
@@ -51,7 +49,7 @@ func (r *Render) Run() {
 				k.CancelFunction = cancel
 				k.Init = true
 
-				if render, ok := r.ScreenList[data].(screens.Renderer); ok {
+				if render, ok := r.ScreenList[data].(screens.Screens); ok {
 					render.Render(ctx)
 					k.Screen = r.ScreenList[data]
 				}
@@ -60,19 +58,8 @@ func (r *Render) Run() {
 			log.Println("Fail")
 		case data := <-r.messageServiceChan:
 			log.Println("MessageService chan")
-			if NewData, ok := data.(*message.SendOpcNodes); ok {
-				log.Println("SendOPC NODE")
-				if screen, ok := k.Screen.(*screens.MainScreen); ok {
-					for _, v := range NewData.Nodes.Nodes {
-						l := screen.MainDiv.AddDiv()
-						l.SetID(v.Name)
-						l.SetInnerHtml(v.Name)
-						wasmhtml.SetAttribute(l.Object, "opcid", string(v.ID))
-					}
-					screen.MainDiv.Generate()
-					return
-				}
-			}
+			go k.Screen.Update(data)
+
 		}
 	}
 }

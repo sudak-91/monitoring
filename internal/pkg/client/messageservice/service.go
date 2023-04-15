@@ -30,6 +30,9 @@ func (s *MessageService) Update(data message.Update, uuid *uuid.UUID, cookie *co
 			log.Println(v.ID)
 		}
 		s.messageServiceChan <- data.SendOpcNodes
+	case data.OPCSubNode != nil:
+		log.Println("Get OPC Subnode update")
+		s.messageServiceChan <- data.OPCSubNode
 	}
 
 }

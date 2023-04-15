@@ -27,11 +27,6 @@ type NodeDef struct {
 	Max         string
 }
 
-type OPCNode struct {
-	Name string
-	ID   []byte
-}
-
 type OPCUAObjectData struct {
 	Nodes []OPCNode
 }
@@ -97,8 +92,10 @@ func (opc *OPCUAService) GetNodes() (OPCUAObjectData, error) {
 	var Nodes OPCUAObjectData
 	for _, v := range nodesList {
 		var node OPCNode
-		p, _ := v.ID.Encode()
-		node.ID = p
+		log.Println(v.ID.Namespace())
+		log.Println(v.ID.IntID())
+		node.ID = v.ID.IntID()
+		node.Namespace = v.ID.Namespace()
 		name, err := v.BrowseName()
 		if err != nil {
 			fmt.Println(err.Error())
@@ -127,6 +124,11 @@ func (opc *OPCUAService) GetNodes() (OPCUAObjectData, error) {
 	opc.opcuaChan <- update
 	log.Println("Send OPCUA Nodes to updater")*/
 	return Nodes, nil
+}
+
+func (opc *OPCUAService) GetSubNodes(nodeID []byte) error {
+	return nil
+
 }
 
 func (n NodeDef) Records() []string {

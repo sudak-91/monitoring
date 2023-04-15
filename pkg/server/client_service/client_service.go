@@ -56,6 +56,7 @@ func (cs *ClientService) Run() {
 				log.Println(err)
 				continue
 			}
+			log.Printf("%+v", msg)
 			go cs.messageRouter(msg)
 		}
 	}()

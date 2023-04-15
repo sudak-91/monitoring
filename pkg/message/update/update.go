@@ -8,4 +8,5 @@ type Updates interface {
 type Update struct {
 	SendUUID     *SendUUID
 	SendOpcNodes *SendOpcNodes
+	OPCSubNode   *OPCSubNode
 }
