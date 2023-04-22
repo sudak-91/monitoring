@@ -1,7 +1,6 @@
 package clientservice
 
 import (
-	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 	"github.com/sudak-91/monitoring/pkg/message"
 	update "github.com/sudak-91/monitoring/pkg/message/update"
@@ -11,9 +10,9 @@ import (
 
 func (cs *ClientService) GetSubNodeHandle(parrentId string, nodeid uint32, nodeNamespace uint16) error {
 	subNodes := update.NewOPCSubNodeUpdate(parrentId)
-	Node := ua.NewNumericNodeID(nodeNamespace, nodeid)
-	parenNode := cs.opcuaService.OPCLient.Node(Node)
-	OrganizesNodeList, err := parenNode.ReferencedNodes(id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+	NodeID := ua.NewNumericNodeID(nodeNamespace, nodeid)
+	Node := cs.opcuaService.OPCLient.Node(NodeID)
+	OrganizesNodeList, err := cs.opcuaService.GetOrganizesNodes(Node)
 	if err != nil {
 		return err
 	}
@@ -24,7 +23,7 @@ func (cs *ClientService) GetSubNodeHandle(parrentId string, nodeid uint32, nodeN
 		}
 		subNodes.AddOrganizeNode(node)
 	}
-	HasComponentNodeList, err := parenNode.ReferencedNodes(id.HasComponent, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+	HasComponentNodeList, err := cs.opcuaService.GetHasComponentNodes(Node)
 	if err != nil {
 		return err
 	}
@@ -35,7 +34,7 @@ func (cs *ClientService) GetSubNodeHandle(parrentId string, nodeid uint32, nodeN
 		}
 		subNodes.AddComponentNode(node)
 	}
-	HasPropertyNodeList, err := parenNode.ReferencedNodes(id.HasProperty, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+	HasPropertyNodeList, err := cs.opcuaService.GetHasPropertyNodes(Node)
 	if err != nil {
 		return err
 	}

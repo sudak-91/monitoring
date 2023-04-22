@@ -2,7 +2,6 @@ package opcuaservice
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
 
@@ -77,59 +76,6 @@ func (opc *OPCUAService) StartOPCUA() {
 
 	}
 }*/
-
-func (opc *OPCUAService) GetNodes() (OPCUAObjectData, error) {
-	//var Names []string
-	uid, err := ua.ParseNodeID("ns=0;i=84")
-	if err != nil {
-		panic(err)
-	}
-	node := opc.OPCLient.Node(uid)
-	nodesList, err := node.ReferencedNodesWithContext(context.Background(), id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
-	if err != nil {
-		panic(err)
-	}
-	var Nodes OPCUAObjectData
-	for _, v := range nodesList {
-		var node OPCNode
-		log.Println(v.ID.Namespace())
-		log.Println(v.ID.IntID())
-		node.ID = v.ID.IntID()
-		node.Namespace = v.ID.Namespace()
-		name, err := v.BrowseName()
-		if err != nil {
-			fmt.Println(err.Error())
-			return OPCUAObjectData{}, err
-		}
-		node.Name = name.Name
-		//Names = append(Names, name.Name)
-		fmt.Println(name.Name)
-		fmt.Printf("Roots node list is %v\n", v.ID)
-		Nodes.Nodes = append(Nodes.Nodes, node)
-		//subnodeLists, err := v.ReferencedNodesWithContext(context.Background(), id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
-		//if err != nil {
-		//	continue
-		//}
-		/*subnodeloop:
-		for _, k := range subnodeLists {
-			name, err := k.BrowseName()
-			if err != nil {
-				continue subnodeloop
-			}
-			fmt.Println(name.Name)
-		}*/
-	}
-
-	/*update := message.NewSendOpcNodes(Names)
-	opc.opcuaChan <- update
-	log.Println("Send OPCUA Nodes to updater")*/
-	return Nodes, nil
-}
-
-func (opc *OPCUAService) GetSubNodes(nodeID []byte) error {
-	return nil
-
-}
 
 func (n NodeDef) Records() []string {
 	return []string{n.BrowseName, n.DataType, n.NodeID.String(), n.Unit, n.Scale, n.Min, n.Max, strconv.FormatBool(n.Writable), n.Description}
