@@ -23,7 +23,7 @@ func main() {
 	//updateService := updateservice.NewUpdateService(MainCTX, clientChan, opcuaChan, updateToClientChan, updateToOpcUaChan, ClientList)
 	//go updateService.Update()
 	opcuaservice := opcuaservice.NewOpcUaService(MainCTX, opcuaChan, updateToOpcUaChan)
-	opcuaservice.StartOPCUA()
+	opcuaservice.StartOPCUA("opc.tcp://192.168.1.225:4840")
 	go webService.Run(opcuaservice)
 
 	/*mux := http.NewServeMux()

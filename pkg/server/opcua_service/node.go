@@ -1,50 +1,64 @@
 package opcuaservice
 
 import (
-	"context"
 	"fmt"
 	"log"
 
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
+	update "github.com/sudak-91/monitoring/pkg/message/update"
 )
 
-type OPCNode struct {
-	Name      string
-	ID        uint32
-	Namespace uint16
-}
+var (
+	consoleColor = "\033[1;34m%s\033[0m"
+)
 
-func (opc *OPCUAService) GetRootNodes() (OPCUAObjectData, error) {
-	uid, err := ua.ParseNodeID("ns=0;i=84")
-	if err != nil {
-		panic(err)
+func (opc *OPCUAService) GetNodes(ns uint16, id uint32, sid string) (update.OPCNode, error) {
+	var (
+		nodeID   *ua.NodeID
+		NodeList update.OPCNode
+	)
+	if id != 0 {
+		nodeID = ua.NewNumericNodeID(ns, id)
+	} else {
+		nodeID = ua.NewStringNodeID(ns, sid)
 	}
-	node := opc.OPCLient.Node(uid)
-	nodesList, err := node.ReferencedNodesWithContext(context.Background(), id.Organizes, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+	node := opc.OPCLient.Node(nodeID)
+	organizesNodes, err := opc.GetOrganizesNodes(node)
 	if err != nil {
-		panic(err)
+		log.Println(err.Error())
 	}
-	var Nodes OPCUAObjectData
-	for _, v := range nodesList {
-		var node OPCNode
-		log.Println(v.ID.Namespace())
-		log.Println(v.ID.IntID())
-		node.ID = v.ID.IntID()
-		node.Namespace = v.ID.Namespace()
-		name, err := v.BrowseName()
-		if err != nil {
-			fmt.Println(err.Error())
-			return OPCUAObjectData{}, err
-		}
-		node.Name = name.Name
-		fmt.Println(name.Name)
-		fmt.Printf("Roots node list is %v\n", v.ID)
-		Nodes.Nodes = append(Nodes.Nodes, node)
+	for _, v := range organizesNodes {
+		node := CreateNode(v)
+		fmt.Printf(consoleColor, "[OrganizesNode]")
+		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
+		NodeList.AddOrganizeNode(node)
 
 	}
-	return Nodes, nil
+
+	componentNodes, err := opc.GetHasComponentNodes(node)
+	if err != nil {
+		log.Println(err.Error())
+
+	}
+	for _, v := range componentNodes {
+		node := CreateNode(v)
+		fmt.Printf(consoleColor, "[ComponentNode]")
+		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
+		NodeList.AddComponentNode(node)
+	}
+	propertyNodes, err := opc.GetHasPropertyNodes(node)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	for _, v := range propertyNodes {
+		node := CreateNode(v)
+		fmt.Printf(consoleColor, "[PropertyNode]")
+		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
+		NodeList.AddPropertyNode(node)
+	}
+	return NodeList, nil
 }
 
 func (opc *OPCUAService) GetOrganizesNodes(node *opcua.Node) ([]*opcua.Node, error) {
@@ -70,14 +84,22 @@ func (opc *OPCUAService) GetHasPropertyNodes(node *opcua.Node) ([]*opcua.Node, e
 	}
 	return HasPropertyNodeList, nil
 }
-func CreateNode(v *opcua.Node) (OPCNode, error) {
-	var node OPCNode
-	node.ID = v.ID.IntID()
+
+func (opc *OPCUAService) GetDataValuesNode(node *opcua.Node) ([]*ua.DataValue, error) {
+	attrs, err := node.Attributes(ua.AttributeIDDataType, ua.AttributeIDValue)
+	if err != nil {
+		return nil, err
+	}
+	return attrs, nil
+}
+func CreateNode(v *opcua.Node) update.NodeDef {
+	var node update.NodeDef
+	node.IID = v.ID.IntID()
+	node.SID = v.ID.StringID()
 	node.Namespace = v.ID.Namespace()
 	nodeName, err := v.BrowseName()
-	if err != nil {
-		return OPCNode{}, err
+	if err == nil {
+		node.Name = nodeName.Name
 	}
-	node.Name = nodeName.Name
-	return node, nil
+	return node
 }

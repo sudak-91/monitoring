@@ -8,7 +8,7 @@ import (
 
 func (cs *ClientService) getOpcUaNodeHandle() error {
 	var upd update.Update
-	data, err := cs.opcuaService.GetRootNodes()
+	data, err := cs.opcuaService.GetNodes(0, 84, "")
 	if err != nil {
 		return err
 	}

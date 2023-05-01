@@ -25,10 +25,6 @@ func (s *MessageService) Update(data message.Update, uuid *uuid.UUID, cookie *co
 		go s.SendUUIDService(*data.SendUUID, uuid, cookie)
 		return
 	case data.SendOpcNodes != nil:
-		for _, v := range data.SendOpcNodes.Nodes.Nodes {
-			log.Println(v.Name)
-			log.Println(v.ID)
-		}
 		s.messageServiceChan <- data.SendOpcNodes
 	case data.OPCSubNode != nil:
 		log.Println("Get OPC Subnode update")

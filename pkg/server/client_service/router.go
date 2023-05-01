@@ -38,7 +38,7 @@ func (m *ClientService) messageRouter(data command.Command) {
 	case data.GetSubNode != nil:
 		log.Println("GetSubNode Commnd")
 		log.Println(m.client.UUID)
-		err := m.GetSubNodeHandle(data.GetSubNode.ParentID, data.GetSubNode.ParentNodeID, data.GetSubNode.ParentNodeNamespace)
+		err := m.GetSubNodeHandle(data.GetSubNode.DOMParrentID, data.GetSubNode.IID, data.GetSubNode.SID, data.GetSubNode.Namespace)
 		if err != nil {
 			log.Println(err.Error())
 			return

@@ -26,9 +26,6 @@ type NodeDef struct {
 	Max         string
 }
 
-type OPCUAObjectData struct {
-	Nodes []OPCNode
-}
 type OPCUAService struct {
 	opcuaChan  chan<- interface{}
 	updateChan <-chan interface{}
@@ -44,13 +41,35 @@ func NewOpcUaService(ctx context.Context, opcuaChan chan<- interface{}, updateCh
 	return &opc
 }
 
-func (opc *OPCUAService) StartOPCUA() {
-	var (
-		endpoint = "opc.tcp://192.168.1.225:4840"
-	)
+func (opc *OPCUAService) StartOPCUA(endpoint string) error {
+	opts := []opcua.Option{}
+	endpoints, err := opcua.GetEndpoints(context.TODO(), endpoint)
+	secPolicy := ua.SecurityPolicyURINone
+	secMode := ua.MessageSecurityModeNone
+
+	authMode := ua.UserTokenTypeAnonymous
+	authOption := opcua.AuthUsername("Administrator", "5dae40eb*")
+
+	opts = append(opts, authOption)
+	if err != nil {
+		return err
+	}
+	var finallyEndpoit *ua.EndpointDescription
+	for _, k := range endpoints {
+		if k.SecurityPolicyURI == secPolicy || k.SecurityMode == secMode {
+			finallyEndpoit = k
+			log.Println(k.EndpointURL, k.SecurityMode, k.SecurityPolicyURI)
+		}
+	}
+	secPolicy = finallyEndpoit.SecurityPolicyURI
+	secMode = finallyEndpoit.SecurityMode
+	secM := opcua.SecurityMode(secMode)
+	opts = append(opts, secM)
+	opts = append(opts, opcua.SecurityFromEndpoint(finallyEndpoit, authMode))
+
 	opc.OPCLient = opcua.NewClient(endpoint)
 	if err := opc.OPCLient.Connect(opc.ctx); err != nil {
-		panic(err)
+		return err
 	}
 	log.Println("OPC UA Server start")
 	//defer opc.c.CloseWithContext(opc.ctx)
@@ -65,6 +84,7 @@ func (opc *OPCUAService) StartOPCUA() {
 
 		}
 	}*/
+	return nil
 
 }
 

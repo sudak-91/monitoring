@@ -1,13 +1,14 @@
 package message
 
 type GetSubNode struct {
-	ParentID            string
-	ParentNodeID        uint32
-	ParentNodeNamespace uint16
+	DOMParrentID string
+	IID          uint32
+	SID          string
+	Namespace    uint16
 }
 
-func GetSubNodeCommande(ParentID string, NodeId uint32, NodeNamespase uint16) Command {
+func GetSubNodeCommande(ParentID string, ID uint32, NodeNamespase uint16, SID string) Command {
 	var Command Command
-	Command.GetSubNode = &GetSubNode{ParentNodeID: NodeId, ParentNodeNamespace: NodeNamespase, ParentID: ParentID}
+	Command.GetSubNode = &GetSubNode{IID: ID, Namespace: NodeNamespase, DOMParrentID: ParentID, SID: SID}
 	return Command
 }

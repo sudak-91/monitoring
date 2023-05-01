@@ -105,18 +105,36 @@ func (m *MainScreen) Update(data any) {
 	switch upd := data.(type) {
 	case *update.SendOpcNodes:
 		log.Println("SendOpcNodes")
-		for _, v := range upd.Nodes.Nodes {
+		for _, v := range upd.Nodes.OrganizesNode {
 			l := m.MainDiv.AddDiv()
 			l.SetID(v.Name)
 			l.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(l.Object, "opcid", v.ID)
+			wasmhtml.SetAttribute(l.Object, "opcid", v.IID)
+			wasmhtml.SetAttribute(l.Object, "opcns", v.Namespace)
+			wasmhtml.AddClickEventListenr(l.Object, js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = l
+		}
+		for _, v := range upd.Nodes.ComponentNode {
+			l := m.MainDiv.AddDiv()
+			l.SetID(v.Name)
+			l.SetInnerHtml(v.Name)
+			wasmhtml.SetAttribute(l.Object, "opcid", v.IID)
+			wasmhtml.SetAttribute(l.Object, "opcns", v.Namespace)
+			wasmhtml.AddClickEventListenr(l.Object, js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = l
+		}
+		for _, v := range upd.Nodes.PropertyNode {
+			l := m.MainDiv.AddDiv()
+			l.SetID(v.Name)
+			l.SetInnerHtml(v.Name)
+			wasmhtml.SetAttribute(l.Object, "opcid", v.IID)
 			wasmhtml.SetAttribute(l.Object, "opcns", v.Namespace)
 			wasmhtml.AddClickEventListenr(l.Object, js.FuncOf(m.GetValue))
 			m.DOMModel[v.Name] = l
 		}
 		m.MainDiv.Generate()
 		return
-	case *update.OPCSubNode:
+	case *update.SubNodes:
 		elem := m.DOMModel[upd.Parent]
 		parent, ok := elem.(*element.Div)
 		list := parent.AddUl()
@@ -124,32 +142,35 @@ func (m *MainScreen) Update(data any) {
 			log.Println("parent element is not div")
 			return
 		}
-		for _, v := range upd.OrganizesNode {
+		for _, v := range upd.Nodes.OrganizesNode {
 			position := list.AddLi()
 			node := position.AddDiv()
 			node.SetID(v.Name)
 			node.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(node.Object, "opcid", v.ID)
+			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
+			wasmhtml.SetAttribute(node.Object, "opcsid", v.SID)
 			wasmhtml.SetAttribute(node.Object, "opcns", v.Namespace)
 			wasmhtml.AddClickEventListenr(node.Object, js.FuncOf(m.GetValue))
 			m.DOMModel[v.Name] = node
 		}
-		for _, v := range upd.ComponentNode {
+		for _, v := range upd.Nodes.ComponentNode {
 			position := list.AddLi()
 			node := position.AddDiv()
 			node.SetID(v.Name)
 			node.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(node.Object, "opcid", v.ID)
+			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
+			wasmhtml.SetAttribute(node.Object, "opcsid", v.SID)
 			wasmhtml.SetAttribute(node.Object, "opcns", v.Namespace)
 			wasmhtml.AddClickEventListenr(node.Object, js.FuncOf(m.GetValue))
 			m.DOMModel[v.Name] = node
 		}
-		for _, v := range upd.PropertyNode {
+		for _, v := range upd.Nodes.PropertyNode {
 			position := list.AddLi()
 			node := position.AddDiv()
 			node.SetID(v.Name)
 			node.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(node.Object, "opcid", v.ID)
+			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
+			wasmhtml.SetAttribute(node.Object, "opcsid", v.SID)
 			wasmhtml.SetAttribute(node.Object, "opcns", v.Namespace)
 			wasmhtml.AddClickEventListenr(node.Object, js.FuncOf(m.GetValue))
 			m.DOMModel[v.Name] = node
@@ -171,7 +192,8 @@ func (m *MainScreen) GetValue(this js.Value, args []js.Value) any {
 	if err != nil {
 		return err
 	}
-	cmd := command.GetSubNodeCommande(this.Get("id").String(), uint32(nodeID), uint16(namespace))
+	sidRaw := this.Call("getAttribute", "opcsid").String()
+	cmd := command.GetSubNodeCommande(this.Get("id").String(), uint32(nodeID), uint16(namespace), sidRaw)
 	data, err := message.EncodeData(cmd)
 	if err != nil {
 		log.Println(err.Error())
@@ -182,6 +204,6 @@ func (m *MainScreen) GetValue(this js.Value, args []js.Value) any {
 		log.Println(err.Error())
 		return nil
 	}
-	log.Printf("namespace = %d, id = %d", cmd.GetSubNode.ParentNodeNamespace, cmd.GetSubNode.ParentNodeID)
+	log.Printf("namespace = %d, id = %d", cmd.GetSubNode.Namespace, cmd.GetSubNode.IID)
 	return nil
 }
