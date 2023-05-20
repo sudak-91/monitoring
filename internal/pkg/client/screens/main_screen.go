@@ -104,6 +104,7 @@ mainloop:
 func (m *MainScreen) Update(data any) {
 	switch upd := data.(type) {
 	case *update.SendOpcNodes:
+		m.MainDiv.Child = nil
 		log.Println("SendOpcNodes")
 		for _, v := range upd.Nodes.OrganizesNode {
 			l := m.MainDiv.AddDiv()
@@ -136,7 +137,9 @@ func (m *MainScreen) Update(data any) {
 		return
 	case *update.SubNodes:
 		elem := m.DOMModel[upd.Parent]
+
 		parent, ok := elem.(*element.Div)
+		parent.Child = nil
 		list := parent.AddUl()
 		if !ok {
 			log.Println("parent element is not div")

@@ -2,8 +2,8 @@ package message
 
 type GetSubNode struct {
 	DOMParrentID string
-	IID          uint32
-	SID          string
+	IID          uint32 // Digital ID "i="
+	SID          string // String ID "s="
 	Namespace    uint16
 }
 
