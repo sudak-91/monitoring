@@ -48,9 +48,9 @@ func (m *ClientService) messageRouter(data command.Command) {
 
 func (cs *ClientService) updateRouter(data any) {
 	switch v := data.(type) {
-	case update.SendOpcNodes:
+	case update.OPCNodes:
 		var upd update.Update
-		upd.SendOpcNodes = &v
+		upd.OpcNodes = &v
 		data, err := message.EncodeData(upd)
 		if err != nil {
 			log.Println(err)

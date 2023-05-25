@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"syscall/js"
 
-	"github.com/sudak-91/monitoring/internal/pkg/client"
+	wsusecase "github.com/sudak-91/monitoring/internal/pkg/ws/use_case"
 	"github.com/sudak-91/monitoring/pkg/message"
 	command "github.com/sudak-91/monitoring/pkg/message/command"
 	update "github.com/sudak-91/monitoring/pkg/message/update"
@@ -16,17 +16,17 @@ import (
 
 type MainScreen struct {
 	CommonScreen
-	client      client.Requester
+	ws          wsusecase.SocketUseCase
 	body        *element.Body
 	MainDiv     *element.Div
 	StatusDiv   *element.Div
 	OPCUAStatus *element.Div
 }
 
-func NewMainScreen(renderChan chan<- interface{}, screenChan <-chan interface{}, body *element.Body, client client.Requester) Screens {
+func NewMainScreen(renderChan chan<- interface{}, screenChan <-chan interface{}, body *element.Body, ws wsusecase.SocketUseCase) Screens {
 	var m MainScreen
 	m.DOMModel = make(map[string]any)
-	m.client = client
+	m.ws = ws
 	m.screenChan = screenChan
 	m.renderChan = renderChan
 	m.body = body
@@ -80,7 +80,7 @@ func (m *MainScreen) update(ctx context.Context) {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	err = m.client.Request(data)
+	err = m.ws.Request(context.TODO(), data)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -103,20 +103,41 @@ mainloop:
 
 func (m *MainScreen) Update(data any) {
 	switch upd := data.(type) {
-	case *update.SendOpcNodes:
+	case *update.OPCNodes:
 		m.MainDiv.Child = nil
-		log.Println("SendOpcNodes")
+		var (
+			organizeNodeDiv  *element.Div
+			componentNodeDiv *element.Div
+			propertyNodeDiv  *element.Div
+		)
+		log.Println("[MainScreen]Update|OPCNodes")
+		if len(upd.Nodes.OrganizesNode) != 0 {
+			organizeNodeDiv = m.MainDiv.AddDiv()
+			organizeNodeDiv.SetID("organizeNode")
+			m.DOMModel[organizeNodeDiv.GetID()] = organizeNodeDiv
+		}
+		if len(upd.Nodes.ComponentNode) != 0 {
+			componentNodeDiv = m.MainDiv.AddDiv()
+			componentNodeDiv.SetID("componentNode")
+			m.DOMModel[componentNodeDiv.GetID()] = componentNodeDiv
+		}
+		if len(upd.Nodes.PropertyNode) != 0 {
+			propertyNodeDiv = m.MainDiv.AddDiv()
+			propertyNodeDiv.SetID("propertyNode")
+			m.DOMModel[propertyNodeDiv.GetID()] = propertyNodeDiv
+		}
 		for _, v := range upd.Nodes.OrganizesNode {
-			l := m.MainDiv.AddDiv()
-			l.SetID(v.Name)
-			l.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(l.Object, "opcid", v.IID)
-			wasmhtml.SetAttribute(l.Object, "opcns", v.Namespace)
-			wasmhtml.AddClickEventListenr(l.Object, js.FuncOf(m.GetValue))
-			m.DOMModel[v.Name] = l
+
+			elem := organizeNodeDiv.AddLi()
+			elem.SetID(v.Name)
+			elem.SetInnerHtml(v.Name)
+			wasmhtml.SetAttribute(elem.Object, "opcid", v.IID)
+			wasmhtml.SetAttribute(elem.Object, "opcns", v.Namespace)
+			wasmhtml.AddClickEventListenr(elem.Object, js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = elem
 		}
 		for _, v := range upd.Nodes.ComponentNode {
-			l := m.MainDiv.AddDiv()
+			l := componentNodeDiv.AddLi()
 			l.SetID(v.Name)
 			l.SetInnerHtml(v.Name)
 			wasmhtml.SetAttribute(l.Object, "opcid", v.IID)
@@ -125,7 +146,7 @@ func (m *MainScreen) Update(data any) {
 			m.DOMModel[v.Name] = l
 		}
 		for _, v := range upd.Nodes.PropertyNode {
-			l := m.MainDiv.AddDiv()
+			l := propertyNodeDiv.AddLi()
 			l.SetID(v.Name)
 			l.SetInnerHtml(v.Name)
 			wasmhtml.SetAttribute(l.Object, "opcid", v.IID)
@@ -136,18 +157,20 @@ func (m *MainScreen) Update(data any) {
 		m.MainDiv.Generate()
 		return
 	case *update.SubNodes:
+		log.Println("[MainScreen]|Update|SubNodes")
+		log.Printf("[MainScreen] Parent is: %s", upd.Parent)
 		elem := m.DOMModel[upd.Parent]
 
-		parent, ok := elem.(*element.Div)
-		parent.Child = nil
+		parent, ok := elem.(*element.Li)
+		parent.RemoveAllChild()
 		list := parent.AddUl()
 		if !ok {
 			log.Println("parent element is not div")
 			return
 		}
 		for _, v := range upd.Nodes.OrganizesNode {
-			position := list.AddLi()
-			node := position.AddDiv()
+
+			node := list.AddLi()
 			node.SetID(v.Name)
 			node.SetInnerHtml(v.Name)
 			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
@@ -157,8 +180,7 @@ func (m *MainScreen) Update(data any) {
 			m.DOMModel[v.Name] = node
 		}
 		for _, v := range upd.Nodes.ComponentNode {
-			position := list.AddLi()
-			node := position.AddDiv()
+			node := list.AddLi()
 			node.SetID(v.Name)
 			node.SetInnerHtml(v.Name)
 			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
@@ -168,8 +190,7 @@ func (m *MainScreen) Update(data any) {
 			m.DOMModel[v.Name] = node
 		}
 		for _, v := range upd.Nodes.PropertyNode {
-			position := list.AddLi()
-			node := position.AddDiv()
+			node := list.AddLi()
 			node.SetID(v.Name)
 			node.SetInnerHtml(v.Name)
 			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
@@ -202,7 +223,7 @@ func (m *MainScreen) GetValue(this js.Value, args []js.Value) any {
 		log.Println(err.Error())
 		return nil
 	}
-	err = m.client.Request(data)
+	err = m.ws.Request(context.TODO(), data)
 	if err != nil {
 		log.Println(err.Error())
 		return nil

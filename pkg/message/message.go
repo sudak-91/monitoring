@@ -9,8 +9,7 @@ import (
 )
 
 type DecodeEncode interface {
-	commandMessage.Command
-	updateMessage.Update
+	commandMessage.Command | updateMessage.Update
 }
 
 func EncodeData(data any) ([]byte, error) {
@@ -29,7 +28,7 @@ func Decode[V DecodeEncode](decodeData []byte) (V, error) {
 	)
 	reader := bytes.NewReader(decodeData)
 	decoder := gob.NewDecoder(reader)
-	err := decoder.Decode(decode)
+	err := decoder.Decode(&decode)
 	if err != nil {
 		return decode, err
 	}

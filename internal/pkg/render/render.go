@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/sudak-91/monitoring/internal/pkg/client/screens"
+	"github.com/sudak-91/monitoring/internal/pkg/screens"
 )
 
 type Render struct {

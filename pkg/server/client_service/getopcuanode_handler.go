@@ -12,7 +12,7 @@ func (cs *ClientService) getOpcUaNodeHandle() error {
 	if err != nil {
 		return err
 	}
-	upd.SendOpcNodes = update.NewSendOpcNodes(&data)
+	upd.OpcNodes = update.NewSendOpcNodes(&data)
 	breq, err := message.EncodeData(upd)
 	if err != nil {
 		return err
