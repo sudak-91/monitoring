@@ -11,6 +11,8 @@ type NodeDef struct {
 	IID       uint32 //OPC ID ex:"i=%d"
 	SID       string //OPC ID ex:"s=%s"
 	Namespace uint16 //OPC Namespace ex:"n=%s"
+	NodeType  uint32
+	DataType  string
 }
 type SubNodes struct {
 	Parent string

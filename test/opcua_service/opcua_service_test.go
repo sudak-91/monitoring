@@ -49,10 +49,15 @@ func TestGetDataValuesNode(t *testing.T) {
 		Node := opcuaService.OPCLient.Node(NodeID)
 		t.Log(Node.ID.String())
 		err := subNodes(opcuaService, Node, 0)
-		if errors.Is(err, &HightLevel{}) {
+		switch {
+		case errors.Is(err, &HightLevel{}):
 			log.Println(err)
 			continue
+		case err != nil:
+			log.Printf("[Error]| %s\n", err.Error())
+			t.Fail()
 		}
+
 	}
 
 }
@@ -98,6 +103,18 @@ func subNodes(service *opcuaservice.OPCUAService, node *opcua.Node, level int) e
 			return l
 		}(level)
 		log.Printf("%s[Organizes] NodeID:%s\t Namespace:%d\t BrowseName:%s\n", k, v.ID.StringID(), v.ID.Namespace(), name.Name)
+		attrib, err := service.GetDataValuesNode(v)
+		if err == nil {
+			if attrib[0].Status == ua.StatusOK {
+				log.Printf("[DataType] %d\n", attrib[0].Value.NodeID().IntID())
+			}
+			if attrib[1].Status == ua.StatusOK {
+				log.Printf("[Value] %v\n", attrib[1].Value.Value())
+			}
+			if attrib[2].Status == ua.StatusOK {
+				log.Printf("[NodeClass] %v\n", attrib[2].Value.Value())
+			}
+		}
 		err = subNodes(service, v, level+1)
 		if errors.Is(err, &HightLevel{}) {
 			log.Println(err.Error())
@@ -130,6 +147,11 @@ func subNodes(service *opcuaservice.OPCUAService, node *opcua.Node, level int) e
 			if attrib[1].Status == ua.StatusOK {
 				log.Printf("[Value] %v\n", attrib[1].Value.Value())
 			}
+			if attrib[2].Status == ua.StatusOK {
+				log.Printf("[NodeClass] %v\n", attrib[2].Value.Value())
+			}
+		} else {
+			return err
 		}
 		err = subNodes(service, v, level+1)
 		if errors.Is(err, &HightLevel{}) {

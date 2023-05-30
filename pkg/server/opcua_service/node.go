@@ -7,6 +7,7 @@ import (
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
+	"github.com/spf13/viper"
 	update "github.com/sudak-91/monitoring/pkg/message/update"
 )
 
@@ -33,6 +34,11 @@ func (opc *OPCUAService) GetNodes(ns uint16, id uint32, sid string) (update.OPCN
 		node := CreateNode(v)
 		fmt.Printf(consoleColor, "[OrganizesNode]")
 		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
+		NodeType, err := opc.GetNodeDataType(v)
+		if err == nil {
+			log.Printf("AddNodeType: %d", NodeType)
+			node.NodeType = NodeType
+		}
 		NodeList.AddOrganizeNode(node)
 
 	}
@@ -46,6 +52,11 @@ func (opc *OPCUAService) GetNodes(ns uint16, id uint32, sid string) (update.OPCN
 		node := CreateNode(v)
 		fmt.Printf(consoleColor, "[ComponentNode]")
 		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
+		NodeType, err := opc.GetNodeDataType(v)
+		if err == nil {
+			log.Printf("AddNodeType: %d", NodeType)
+			node.NodeType = NodeType
+		}
 		NodeList.AddComponentNode(node)
 	}
 	propertyNodes, err := opc.GetHasPropertyNodes(node)
@@ -56,7 +67,12 @@ func (opc *OPCUAService) GetNodes(ns uint16, id uint32, sid string) (update.OPCN
 		node := CreateNode(v)
 		fmt.Printf(consoleColor, "[PropertyNode]")
 		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
+		NodeType, err := opc.GetNodeDataType(v)
+		if err == nil {
+			node.NodeType = NodeType
+		}
 		NodeList.AddPropertyNode(node)
+
 	}
 	return NodeList, nil
 }
@@ -86,12 +102,36 @@ func (opc *OPCUAService) GetHasPropertyNodes(node *opcua.Node) ([]*opcua.Node, e
 }
 
 func (opc *OPCUAService) GetDataValuesNode(node *opcua.Node) ([]*ua.DataValue, error) {
-	attrs, err := node.Attributes(ua.AttributeIDDataType, ua.AttributeIDValue)
+	attrs, err := node.Attributes(ua.AttributeIDDataType, ua.AttributeIDValue, ua.AttributeIDNodeClass)
+
 	if err != nil {
 		return nil, err
 	}
 	return attrs, nil
 }
+
+func (opc *OPCUAService) GetNodeDataType(node *opcua.Node) (uint32, error) {
+	att, err := node.Attributes(ua.AttributeIDDataType)
+	if err != nil {
+		log.Printf("[GetNode|Error]:%s\n", err.Error())
+		return 0, err
+
+	}
+	if viper.GetBool("Debug") {
+		log.Println(len(att))
+	}
+	if len(att) == 0 {
+		return 0, nil
+	}
+
+	if att[0].Status == ua.StatusOK {
+		return att[0].Value.NodeID().IntID(), nil
+	}
+
+	return 0, nil
+
+}
+
 func CreateNode(v *opcua.Node) update.NodeDef {
 	var node update.NodeDef
 	node.IID = v.ID.IntID()

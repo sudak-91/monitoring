@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"syscall/js"
 
+	"github.com/sudak-91/monitoring/internal/pkg/screens/internal/unit"
 	wsusecase "github.com/sudak-91/monitoring/internal/pkg/ws/use_case"
 	"github.com/sudak-91/monitoring/pkg/message"
 	command "github.com/sudak-91/monitoring/pkg/message/command"
@@ -19,12 +20,91 @@ type MainScreen struct {
 	ws          wsusecase.SocketUseCase
 	body        *element.Body
 	MainDiv     *element.Div
+	Navigate    *element.Div
+	Browse      *element.Div
+	NodeTree    *element.Div
+	NodeInfo    *element.Div
 	StatusDiv   *element.Div
 	OPCUAStatus *element.Div
 }
 
 func NewMainScreen(renderChan chan<- interface{}, screenChan <-chan interface{}, body *element.Body, ws wsusecase.SocketUseCase) Screens {
 	var m MainScreen
+	head := wasmhtml.Document.Get("head")
+	style := wasmhtml.Document.Call("createElement", "style")
+	head.Call("appendChild", style)
+	style.Set("innerHTML", `
+	.node .node{
+		margin-left: 3em;
+	  }
+
+	  .main {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 0px 10px;
+		gap: 10px;
+		position: relative;
+		width: 1920px;
+		height: 1080px;
+	  }
+
+.navigate{
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 10px;
+gap: 10px;
+
+width:300px;
+height: 1080px;
+background-color: green;
+}
+
+.browse{
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	padding: 10px;
+	gap: 10px;
+	
+	width: minmax(600,auto);
+	height: 1080px;
+	
+	
+	}
+
+	.nodeview{
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 10px;
+		gap: 10px;
+		
+		width: 1260px;
+		height: 1060px;
+		
+		
+		}
+
+		.nodeinfo{
+			display: flex;
+			flex-direction: row;
+			align-items: flex-start;
+			padding: 10px;
+			gap: 10px;
+			
+			width: 300px;
+			height: 1060px;
+			  background-color: gray;
+			}
+	.foldernode{
+		background-color: blue;
+	}
+	.datanode{
+		background-color: yellow;
+	}
+	`)
 	m.DOMModel = make(map[string]any)
 	m.ws = ws
 	m.screenChan = screenChan
@@ -36,11 +116,19 @@ func NewMainScreen(renderChan chan<- interface{}, screenChan <-chan interface{},
 	background: #D2D2D2;`)
 	m.MainDiv = m.body.AddDiv()
 	m.MainDiv.SetID("maindiv")
-	m.MainDiv.SetStyle(`position: absolute;
-	width: 1510px;
-	height: 1030px;
-	left: 0px;
-	top: 0px;`)
+	m.MainDiv.AddClass("main")
+
+	m.Navigate = m.MainDiv.AddDiv()
+	m.Navigate.AddClass("navigate")
+
+	m.Browse = m.MainDiv.AddDiv()
+	m.Browse.AddClass("browse")
+
+	m.NodeTree = m.Browse.AddDiv()
+	m.NodeTree.AddClass("nodeview")
+
+	m.NodeInfo = m.Browse.AddDiv()
+	m.NodeInfo.AddClass("nodeinfo")
 	m.StatusDiv = m.body.AddDiv()
 	m.StatusDiv.SetID("statusdiv")
 	m.StatusDiv.SetStyle(`position: absolute;
@@ -65,6 +153,7 @@ func NewMainScreen(renderChan chan<- interface{}, screenChan <-chan interface{},
 	m.DOMModel[m.MainDiv.GetID()] = m.MainDiv
 	m.DOMModel[m.StatusDiv.GetID()] = m.StatusDiv
 	m.DOMModel[m.OPCUAStatus.GetID()] = m.OPCUAStatus
+
 	return &m
 }
 
@@ -112,29 +201,34 @@ func (m *MainScreen) Update(data any) {
 		)
 		log.Println("[MainScreen]Update|OPCNodes")
 		if len(upd.Nodes.OrganizesNode) != 0 {
-			organizeNodeDiv = m.MainDiv.AddDiv()
+			organizeNodeDiv = m.NodeTree.AddDiv()
 			organizeNodeDiv.SetID("organizeNode")
 			m.DOMModel[organizeNodeDiv.GetID()] = organizeNodeDiv
 		}
+
 		if len(upd.Nodes.ComponentNode) != 0 {
-			componentNodeDiv = m.MainDiv.AddDiv()
+			componentNodeDiv = m.NodeTree.AddDiv()
 			componentNodeDiv.SetID("componentNode")
 			m.DOMModel[componentNodeDiv.GetID()] = componentNodeDiv
 		}
 		if len(upd.Nodes.PropertyNode) != 0 {
-			propertyNodeDiv = m.MainDiv.AddDiv()
+			propertyNodeDiv = m.NodeTree.AddDiv()
 			propertyNodeDiv.SetID("propertyNode")
 			m.DOMModel[propertyNodeDiv.GetID()] = propertyNodeDiv
 		}
 		for _, v := range upd.Nodes.OrganizesNode {
 
-			elem := organizeNodeDiv.AddLi()
-			elem.SetID(v.Name)
-			elem.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(elem.Object, "opcid", v.IID)
-			wasmhtml.SetAttribute(elem.Object, "opcns", v.Namespace)
-			wasmhtml.AddClickEventListenr(elem.Object, js.FuncOf(m.GetValue))
-			m.DOMModel[v.Name] = elem
+			elem := unit.NewNodeUnit(organizeNodeDiv)
+			switch v.NodeType {
+			case 0:
+				elem.AddClass("foldernode")
+			default:
+				elem.AddClass("datanode")
+			}
+			elem.AddTitle(v.Name)
+			elem.SetAttributes(v.Name, v.Namespace, v.IID, "")
+			elem.AddEventListener(js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = elem.GetParentDiv()
 		}
 		for _, v := range upd.Nodes.ComponentNode {
 			l := componentNodeDiv.AddLi()
@@ -161,43 +255,54 @@ func (m *MainScreen) Update(data any) {
 		log.Printf("[MainScreen] Parent is: %s", upd.Parent)
 		elem := m.DOMModel[upd.Parent]
 
-		parent, ok := elem.(*element.Li)
-		parent.RemoveAllChild()
-		list := parent.AddUl()
+		parent, ok := elem.(*element.Div)
+		//parent.RemoveAllChild()
 		if !ok {
 			log.Println("parent element is not div")
 			return
 		}
 		for _, v := range upd.Nodes.OrganizesNode {
 
-			node := list.AddLi()
-			node.SetID(v.Name)
-			node.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
-			wasmhtml.SetAttribute(node.Object, "opcsid", v.SID)
-			wasmhtml.SetAttribute(node.Object, "opcns", v.Namespace)
-			wasmhtml.AddClickEventListenr(node.Object, js.FuncOf(m.GetValue))
-			m.DOMModel[v.Name] = node
+			node := unit.NewNodeUnit(parent)
+			log.Println(v.NodeType)
+			switch v.NodeType {
+			case 0:
+				node.AddClass("foldernode")
+			default:
+				node.AddClass("datanode")
+			}
+			node.AddTitle(v.Name)
+			node.SetAttributes(v.Name, v.Namespace, v.IID, v.SID)
+			node.AddEventListener(js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = node.GetParentDiv()
 		}
 		for _, v := range upd.Nodes.ComponentNode {
-			node := list.AddLi()
-			node.SetID(v.Name)
-			node.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
-			wasmhtml.SetAttribute(node.Object, "opcsid", v.SID)
-			wasmhtml.SetAttribute(node.Object, "opcns", v.Namespace)
-			wasmhtml.AddClickEventListenr(node.Object, js.FuncOf(m.GetValue))
-			m.DOMModel[v.Name] = node
+			node := unit.NewNodeUnit(parent)
+			log.Println(v.NodeType)
+			switch v.NodeType {
+			case 0:
+				node.AddClass("foldernode")
+			default:
+				node.AddClass("datanode")
+			}
+			node.AddTitle(v.Name)
+			node.SetAttributes(v.Name, v.Namespace, v.IID, v.SID)
+			node.AddEventListener(js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = node.GetParentDiv()
 		}
 		for _, v := range upd.Nodes.PropertyNode {
-			node := list.AddLi()
-			node.SetID(v.Name)
-			node.SetInnerHtml(v.Name)
-			wasmhtml.SetAttribute(node.Object, "opcid", v.IID)
-			wasmhtml.SetAttribute(node.Object, "opcsid", v.SID)
-			wasmhtml.SetAttribute(node.Object, "opcns", v.Namespace)
-			wasmhtml.AddClickEventListenr(node.Object, js.FuncOf(m.GetValue))
-			m.DOMModel[v.Name] = node
+			node := unit.NewNodeUnit(parent)
+			log.Println(v.NodeType)
+			switch v.NodeType {
+			case 0:
+				node.AddClass("foldernode")
+			default:
+				node.AddClass("datanode")
+			}
+			node.AddTitle(v.Name)
+			node.SetAttributes(v.Name, v.Namespace, v.IID, v.SID)
+			node.AddEventListener(js.FuncOf(m.GetValue))
+			m.DOMModel[v.Name] = node.GetParentDiv()
 		}
 		parent.Generate()
 		return
@@ -217,7 +322,11 @@ func (m *MainScreen) GetValue(this js.Value, args []js.Value) any {
 		return err
 	}
 	sidRaw := this.Call("getAttribute", "opcsid").String()
-	cmd := command.GetSubNodeCommande(this.Get("id").String(), uint32(nodeID), uint16(namespace), sidRaw)
+	parent := this.Get("parentElement")
+	log.Println(parent)
+	parentID := parent.Get("id")
+	log.Printf("[Function]|Parent is: %s", parentID.String())
+	cmd := command.GetSubNodeCommande(parentID.String(), uint32(nodeID), uint16(namespace), sidRaw)
 	data, err := message.EncodeData(cmd)
 	if err != nil {
 		log.Println(err.Error())
