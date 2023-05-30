@@ -40,9 +40,9 @@ func (n *NodeUnit) AddTitle(title string) {
 
 func (n *NodeUnit) SetAttributes(id string, opcns uint16, opcid uint32, opcsid string) {
 	n.unit.SetID(id)
-	wasmhtml.SetAttribute(n.actiondiv.Object, "opcns", opcns)
-	wasmhtml.SetAttribute(n.actiondiv.Object, "opcid", opcid)
-	wasmhtml.SetAttribute(n.actiondiv.Object, "opcsid", opcsid)
+	wasmhtml.SetAttribute(n.unit.Object, "opcns", opcns)
+	wasmhtml.SetAttribute(n.unit.Object, "opcid", opcid)
+	wasmhtml.SetAttribute(n.unit.Object, "opcsid", opcsid)
 
 }
 func (n *NodeUnit) AddEventListener(fun js.Func) {

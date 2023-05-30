@@ -39,29 +39,25 @@ func NewMainScreen(renderChan chan<- interface{}, screenChan <-chan interface{},
 		height: 1080px;
 	  }
 
-.navigate{
-display: flex;
-flex-direction: row;
-align-items: flex-start;
-padding: 10px;
-gap: 10px;
+	.navigate{
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 10px;
+		gap: 10px;
+		width:300px;
+		height: 1080px;
+		background-color: green;
+	}
 
-width:300px;
-height: 1080px;
-background-color: green;
-}
-
-.browse{
-	display: flex;
-	flex-direction: row;
-	align-items: flex-start;
-	padding: 10px;
-	gap: 10px;
-	
-	width: minmax(600,auto);
-	height: 1080px;
-	
-	
+	.browse{
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 10px;
+		gap: 10px;	
+		width: minmax(600,auto);
+		height: 1080px;
 	}
 
 	.nodeview{
@@ -69,25 +65,21 @@ background-color: green;
 		flex-direction: row;
 		align-items: flex-start;
 		padding: 10px;
-		gap: 10px;
-		
+		gap: 10px;		
 		width: 1260px;
 		height: 1060px;
-		
-		
-		}
+	}
 
-		.nodeinfo{
-			display: flex;
-			flex-direction: row;
-			align-items: flex-start;
-			padding: 10px;
-			gap: 10px;
-			
-			width: 300px;
-			height: 1060px;
-			  background-color: gray;
-			}
+	.nodeinfo{
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 10px;
+		gap: 10px;
+		width: 300px;
+		height: 1060px;
+		background-color: gray;
+	}
 	.foldernode{
 		background-color: blue;
 	}

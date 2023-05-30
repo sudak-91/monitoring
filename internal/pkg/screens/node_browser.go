@@ -185,19 +185,19 @@ func (n *NodeBrowser) Update(data any) {
 }
 
 func (n *NodeBrowser) GetValue(this js.Value, args []js.Value) any {
-	idRaw := this.Call("getAttribute", "opcid")
+	parent := this.Get("parentElement")
+	idRaw := parent.Call("getAttribute", "opcid")
 	nodeID, err := strconv.ParseUint(idRaw.String(), 10, 32)
 	if err != nil {
 		return err
 	}
-	namespcaeRaw := this.Call("getAttribute", "opcns").String()
+	namespcaeRaw := parent.Call("getAttribute", "opcns").String()
 	namespace, err := strconv.ParseUint(namespcaeRaw, 10, 16)
 	if err != nil {
 		return err
 	}
-	sidRaw := this.Call("getAttribute", "opcsid").String()
-	parent := this.Get("parentElement")
-	log.Println(parent)
+	sidRaw := parent.Call("getAttribute", "opcsid").String()
+
 	parentID := parent.Get("id")
 	log.Printf("[Function]|Parent is: %s", parentID.String())
 	cmd := command.GetSubNodeCommande(parentID.String(), uint32(nodeID), uint16(namespace), sidRaw)
