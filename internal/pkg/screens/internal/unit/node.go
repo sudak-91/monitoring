@@ -3,6 +3,7 @@ package unit
 import (
 	"syscall/js"
 
+	update "github.com/sudak-91/monitoring/pkg/message/update"
 	"github.com/sudak-91/wasmhtml"
 	"github.com/sudak-91/wasmhtml/element"
 )
@@ -13,7 +14,7 @@ type NodeUnit struct {
 	titile    *element.Div
 }
 
-func NewNodeUnit(parent *element.Div) *NodeUnit {
+func NewNodeUnit(parent *element.Div, nodeDef update.NodeDef, folderFunc js.Func, dataFunc js.Func) *NodeUnit {
 	var u NodeUnit
 	u.unit = parent.AddDiv()
 	u.unit.AddClass("node")
@@ -22,7 +23,18 @@ func NewNodeUnit(parent *element.Div) *NodeUnit {
 	`)
 	u.actiondiv = u.unit.AddDiv()
 	u.actiondiv.AddClass("action")
-	u.actiondiv.SetInnerHtml("+")
+	switch nodeDef.NodeType {
+	case 0:
+		u.actiondiv.SetInnerHtml("+")
+		u.unit.AddClass("foldernode")
+		u.addEventListener(u.actiondiv.Object, folderFunc)
+
+	default:
+		u.actiondiv.SetInnerHtml(">")
+		u.unit.AddClass("datanode")
+		u.addEventListener(u.actiondiv.Object, dataFunc)
+	}
+
 	u.actiondiv.SetStyle(`
 	display:inline-block
 	`)
@@ -31,22 +43,24 @@ func NewNodeUnit(parent *element.Div) *NodeUnit {
 	u.titile.SetStyle(`
 	display:inline-block
 	`)
+	u.addTitle(nodeDef.Name)
+	u.setAttributes(nodeDef.Name, nodeDef.Namespace, nodeDef.IID, nodeDef.SID)
 	return &u
 }
 
-func (n *NodeUnit) AddTitle(title string) {
+func (n *NodeUnit) addTitle(title string) {
 	n.titile.SetInnerHtml(title)
 }
 
-func (n *NodeUnit) SetAttributes(id string, opcns uint16, opcid uint32, opcsid string) {
+func (n *NodeUnit) setAttributes(id string, opcns uint16, opcid uint32, opcsid string) {
 	n.unit.SetID(id)
 	wasmhtml.SetAttribute(n.unit.Object, "opcns", opcns)
 	wasmhtml.SetAttribute(n.unit.Object, "opcid", opcid)
 	wasmhtml.SetAttribute(n.unit.Object, "opcsid", opcsid)
 
 }
-func (n *NodeUnit) AddEventListener(fun js.Func) {
-	wasmhtml.AddClickEventListenr(n.actiondiv.Object, fun)
+func (n *NodeUnit) addEventListener(object js.Value, fun js.Func) {
+	wasmhtml.AddClickEventListenr(object, fun)
 }
 
 func (n *NodeUnit) GetParentDiv() *element.Div {

@@ -25,9 +25,10 @@ type OPCNode struct {
 }
 
 type Update struct {
-	SendUUID   *SendUUID
-	OpcNodes   *OPCNodes
-	OPCSubNode *SubNodes
+	SendUUID        *SendUUID
+	OpcNodes        *OPCNodes
+	OPCSubNode      *SubNodes
+	NodeDescription *NodeDescription
 }
 
 func (n *OPCNode) AddOrganizeNode(node NodeDef) {

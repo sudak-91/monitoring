@@ -143,3 +143,9 @@ func CreateNode(v *opcua.Node) update.NodeDef {
 	}
 	return node
 }
+
+func (opc *OPCUAService) GetNodeBySID(ns uint16, sid string) *opcua.Node {
+	nodeID := ua.NewStringNodeID(ns, sid)
+	node := opc.OPCLient.Node(nodeID)
+	return node
+}

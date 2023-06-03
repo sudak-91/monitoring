@@ -98,7 +98,6 @@ func (n *NodeBrowser) Update(data any) {
 		log.Println("[MainScreen]|Update|SubNodes")
 		log.Printf("[MainScreen] Parent is: %s", upd.Parent)
 		elem := n.DOMModel[upd.Parent]
-
 		parent, ok := elem.(*element.Div)
 		//parent.RemoveAllChild()
 		if !ok {
@@ -151,6 +150,29 @@ func (n *NodeBrowser) GetValue(this js.Value, args []js.Value) any {
 	return nil
 }
 
+func (n *NodeBrowser) GetNodeDescription(this js.Value, args []js.Value) any {
+	parent := this.Get("parentElement")
+	namespaceRaw := parent.Call("getAttribute", "opcns").String()
+	namespace, err := strconv.ParseUint(namespaceRaw, 10, 16)
+	if err != nil {
+		return err
+	}
+	sidRaw := parent.Call("getAttribute", "opcsid").String()
+
+	cmd := command.GetNodeDescriptionCommand(uint16(namespace), sidRaw)
+	data, err := message.EncodeData(cmd)
+	if err != nil {
+		log.Println(err.Error())
+		return nil
+	}
+	err = n.ws.Request(context.TODO(), data)
+	if err != nil {
+		log.Println(err.Error())
+		return nil
+	}
+	return nil
+}
+
 func (n *NodeBrowser) createMainNodeDiv(id string) *element.Div {
 	mainNode := n.NodeTree.AddDiv()
 	mainNode.SetID(id)
@@ -159,15 +181,8 @@ func (n *NodeBrowser) createMainNodeDiv(id string) *element.Div {
 }
 
 func (n *NodeBrowser) createNodeUnit(parentNode *element.Div, v update.NodeDef) {
-	elem := unit.NewNodeUnit(parentNode)
-	switch v.NodeType {
-	case 0:
-		elem.AddClass("foldernode")
-	default:
-		elem.AddClass("datanode")
-	}
-	elem.AddTitle(v.Name)
-	elem.SetAttributes(v.Name, v.Namespace, v.IID, v.SID)
-	elem.AddEventListener(js.FuncOf(n.GetValue))
+	folderFunc := js.FuncOf(n.GetValue)
+	nodeFunc := js.FuncOf(n.GetNodeDescription)
+	elem := unit.NewNodeUnit(parentNode, v, folderFunc, nodeFunc)
 	n.DOMModel[v.Name] = elem.GetParentDiv()
 }

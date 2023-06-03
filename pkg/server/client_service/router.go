@@ -43,6 +43,14 @@ func (m *ClientService) messageRouter(data command.Command) {
 			log.Println(err.Error())
 			return
 		}
+	case data.GetNodeDescription != nil:
+		log.Println("[Command]|Get Node Description")
+		log.Printf("[Client UUID]|ClientUUID: %s", m.client.UUID)
+		err := m.GetNodeDescriptionHandler(data.GetNodeDescription.NS, data.GetNodeDescription.SID)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
 	}
 }
 
