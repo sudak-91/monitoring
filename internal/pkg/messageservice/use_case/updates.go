@@ -11,3 +11,7 @@ func (u *MSUseCase) OpcNodesUpdate(update *update.OPCNodes) {
 func (u *MSUseCase) OpcSubNodesupdate(update *update.SubNodes) {
 	u.messageChannel <- update
 }
+
+func (u *MSUseCase) OpcNodeDescription(update *update.NodeDescription) {
+	u.messageChannel <- update
+}

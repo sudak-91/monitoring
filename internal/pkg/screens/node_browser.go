@@ -115,6 +115,8 @@ func (n *NodeBrowser) Update(data any) {
 		}
 		parent.Generate()
 		return
+	case *update.NodeDescription:
+		log.Printf("[NodeDescription]:%s,%s", upd.DataType, upd.Description)
 
 	}
 }
@@ -151,6 +153,7 @@ func (n *NodeBrowser) GetValue(this js.Value, args []js.Value) any {
 }
 
 func (n *NodeBrowser) GetNodeDescription(this js.Value, args []js.Value) any {
+	log.Println("[GetNodeDescription]")
 	parent := this.Get("parentElement")
 	namespaceRaw := parent.Call("getAttribute", "opcns").String()
 	namespace, err := strconv.ParseUint(namespaceRaw, 10, 16)

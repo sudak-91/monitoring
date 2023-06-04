@@ -53,6 +53,9 @@ func (s *MSUseCase) update(update update.Update) {
 		s.OpcNodesUpdate(update.OpcNodes)
 	case update.OPCSubNode != nil:
 		s.OpcSubNodesupdate(update.OPCSubNode)
+	case update.NodeDescription != nil:
+		s.OpcNodeDescription(update.NodeDescription)
+
 	}
 }
 
