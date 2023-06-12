@@ -7,9 +7,9 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
-	"github.com/sudak-91/monitoring/pkg/server"
-	"github.com/sudak-91/monitoring/pkg/server/clients"
-	opcuaservice "github.com/sudak-91/monitoring/pkg/server/opcua_service"
+	"github.com/sudak-91/monitoring/pkg/clientservice"
+	opcuaservice "github.com/sudak-91/monitoring/pkg/opcua_service"
+	"github.com/sudak-91/monitoring/pkg/webserver"
 )
 
 func main() {
@@ -26,17 +26,17 @@ func main() {
 		}
 	}
 	MainCTX := context.Background()
-	ClientList := clients.NewClientList()
-	updateToClientChan := make(chan any, 5)
+	//updateToClientChan := make(chan any, 5)
 	updateToOpcUaChan := make(chan any, 6)
 	opcuaChan := make(chan any, 5)
-	clientChan := make(chan any, 5)
-	log.Println("Create Web Service")
-	webService := server.NewWebService(MainCTX, updateToClientChan, clientChan, ClientList)
-	log.Println("Create Update Service")
+	//clientChan := make(chan any, 5)
 	opcuaservice := opcuaservice.NewOpcUaService(MainCTX, opcuaChan, updateToOpcUaChan)
 	opcuaservice.StartOPCUA(os.Getenv("OPCUA_Server"))
-	go webService.Run(opcuaservice)
+	log.Println("Create Web Service")
+	clientService := clientservice.NewClientService(MainCTX, opcuaservice)
+	webService := webserver.NewWebService(MainCTX, clientService)
+	log.Println("Create Update Service")
+	go webService.Run()
 	l := make(chan bool)
 	<-l
 }
