@@ -8,19 +8,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sudak-91/monitoring/pkg/client"
-	opcuaservice "github.com/sudak-91/monitoring/pkg/opcua_service"
 	"nhooyr.io/websocket"
 )
 
 // Service for connected users
 
 type ClientService struct {
-	Mutex               sync.RWMutex
-	clientToServiceChan chan interface{} //message from client
+	Mutex                        sync.RWMutex
+	clientToServiceChan          chan interface{} //message from client
+	commandToOpcUaControllerChan chan any
 	//updateChan          <-chan any
-	Users        map[uuid.UUID]*client.Client
-	opcuaService *opcuaservice.OPCUAService
-	ctx          context.Context
+	Users map[uuid.UUID]*client.Client
+	ctx   context.Context
 }
 
 func (cs *ClientService) AddClient(client *client.Client) {
@@ -42,19 +41,20 @@ func (cs *ClientService) ChangeUUID(newUUID uuid.UUID, oldUUID uuid.UUID) error 
 
 }
 
-func NewClientService(ctx context.Context, opcuaService *opcuaservice.OPCUAService) *ClientService {
+func NewClientService(ctx context.Context, commandToOpcUaControllerChan chan any) *ClientService {
 	var cs ClientService
 	cs.ctx = ctx
 	cs.Users = make(map[uuid.UUID]*client.Client)
 	cs.clientToServiceChan = make(chan interface{}, 5)
 	//cs.updateChan = updateChan
-	cs.opcuaService = opcuaService
+	cs.commandToOpcUaControllerChan = commandToOpcUaControllerChan
+
 	return &cs
 
 }
 
 func (cs *ClientService) NewClient(ws *websocket.Conn) {
-	client := client.NewClient(ws, cs.clientToServiceChan, cs.opcuaService)
+	client := client.NewClient(ws, cs.clientToServiceChan, cs.commandToOpcUaControllerChan, cs.ctx)
 	cs.AddClient(client)
 	go client.Run()
 }

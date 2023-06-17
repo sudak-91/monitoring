@@ -2,31 +2,35 @@ package client
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/google/uuid"
 	message "github.com/sudak-91/monitoring/pkg/message"
 	command "github.com/sudak-91/monitoring/pkg/message/command"
 	update "github.com/sudak-91/monitoring/pkg/message/update"
-	opcuaservice "github.com/sudak-91/monitoring/pkg/opcua_service"
+
 	"nhooyr.io/websocket"
 )
 
 type Client struct {
-	Conn                *websocket.Conn
-	opcuaService        *opcuaservice.OPCUAService
-	clientToServiceChan chan<- any
-	UUID                uuid.UUID
-	IsUUIDTemp          bool
+	Conn *websocket.Conn
+
+	clientToServiceChan    chan<- any
+	commandToOpcController chan any
+	UUID                   uuid.UUID
+	ctx                    context.Context
+	IsUUIDTemp             bool
 }
 
-func NewClient(conn *websocket.Conn, clientToServiceChan chan<- any, opcuaService *opcuaservice.OPCUAService) *Client {
+func NewClient(conn *websocket.Conn, clientToServiceChan chan<- any, commandToOpcController chan any, ctx context.Context) *Client {
 	var c Client
 	c.UUID = uuid.New()
 	c.IsUUIDTemp = true
 	c.Conn = conn
-	c.opcuaService = opcuaService
 	c.clientToServiceChan = clientToServiceChan
+	c.commandToOpcController = commandToOpcController
+	c.ctx = ctx
 	return &c
 }
 
@@ -130,38 +134,54 @@ func (c *Client) messageRouter(data command.Command) {
 }*/
 
 func (c *Client) GetNodeDescriptionHandler(ns uint16, sid string) ([]byte, error) {
-	node := c.opcuaService.GetNodeBySID(ns, sid)
-	DataType, Description, err := c.opcuaService.GetNodeDescription(node)
-	if err != nil {
-		log.Printf("[GetNodeDescription]|%s", err.Error())
-		return nil, err
+	respChan := make(chan NodeDescriptionTransfer)
+	dataTransfer, transferCtx := NewGetOpcUaNodeDescriptionTransfer(ns, sid, respChan, c.ctx)
+	c.commandToOpcController <- dataTransfer
+	select {
+	case <-transferCtx.Done():
+		return nil, errors.New("Transfer Error")
+	case data := <-dataTransfer.ResponseChan:
+		upd := update.NewNodeDescriptionUpdate(data.DataType, data.Description)
+		return message.EncodeData(upd)
 	}
-	update := update.NewNodeDescriptionUpdate(DataType, Description)
-	return message.EncodeData(update)
 
 }
 
 func (c *Client) getOpcUaNodeHandle() ([]byte, error) {
-	var upd update.Update
-	data, err := c.opcuaService.GetNodes(0, 84, "")
-	if err != nil {
-		return nil, err
+	var dataTransfer GetOpcUaNodeTransfer
+	transferCtx, Cancel := context.WithCancel(c.ctx)
+	responseChan := make(chan update.OPCNode)
+	dataTransfer.Cancel = Cancel
+	dataTransfer.IID = 84
+	dataTransfer.Namespace = 0
+	dataTransfer.ResponseChan = responseChan
+	c.commandToOpcController <- dataTransfer
+	log.Println("Opc Ua send data transfer")
+	select {
+	case <-transferCtx.Done():
+		return nil, errors.New("TransferError")
+	case data := <-dataTransfer.ResponseChan:
+		var upd update.Update
+		upd.OpcNodes = update.NewSendOpcNodes(&data)
+		return message.EncodeData(upd)
+
 	}
-	upd.OpcNodes = update.NewSendOpcNodes(&data)
-	return message.EncodeData(upd)
 
 }
 
 func (c *Client) GetSubNodeHandle(parrentId string, id uint32, sid string, nodeNamespace uint16) ([]byte, error) {
 	subNodes := update.NewOPCSubNodeUpdate(parrentId)
-	OPCNodes, err := c.opcuaService.GetNodes(nodeNamespace, id, sid)
-	if err != nil {
-		return nil, err
+	respChan := make(chan update.OPCNode)
+	dataTransfer, transferCtx := NewGetOpcUaNodeTransfer(nodeNamespace, id, sid, respChan, c.ctx)
+	c.commandToOpcController <- dataTransfer
+	select {
+	case <-transferCtx.Done():
+		return nil, errors.New("TransferError")
+	case data := <-dataTransfer.ResponseChan:
+		subNodes.Nodes = data
+		update := subNodes.GetUpdate()
+		return message.EncodeData(update)
 	}
-	subNodes.Nodes = OPCNodes
-	update := subNodes.GetUpdate()
-	return message.EncodeData(update)
-
 }
 
 func (c *Client) SetUUIDHandle(UUID string) error {

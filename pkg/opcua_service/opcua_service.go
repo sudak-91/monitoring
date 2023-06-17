@@ -9,6 +9,7 @@ import (
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 	"github.com/pkg/errors"
+	"github.com/sudak-91/monitoring/pkg/client"
 )
 
 type NodeDef struct {
@@ -27,16 +28,16 @@ type NodeDef struct {
 }
 
 type OPCUAService struct {
-	opcuaChan  chan<- interface{}
-	updateChan <-chan interface{}
-	ctx        context.Context
-	OPCLient   *opcua.Client
+	opcuaChan              chan<- interface{}
+	fromCommandToOpcuaChan <-chan interface{} //
+	ctx                    context.Context
+	OPCLient               *opcua.Client
 }
 
-func NewOpcUaService(ctx context.Context, opcuaChan chan<- interface{}, updateChan <-chan interface{}) *OPCUAService {
+func NewOpcUaService(ctx context.Context, opcuaChan chan<- interface{}, fromCommandToOpcuaChan <-chan interface{}) *OPCUAService {
 	var opc OPCUAService
 	opc.ctx = ctx
-	opc.updateChan = updateChan
+	opc.fromCommandToOpcuaChan = fromCommandToOpcuaChan
 	opc.opcuaChan = opcuaChan
 	return &opc
 }
@@ -72,6 +73,7 @@ func (opc *OPCUAService) StartOPCUA(endpoint string) error {
 		return err
 	}
 	log.Println("OPC UA Server start")
+	go opc.CommandController()
 	//defer opc.c.CloseWithContext(opc.ctx)
 	//@TODO: Пока заблокированный цикл
 	/*for {
@@ -86,6 +88,37 @@ func (opc *OPCUAService) StartOPCUA(endpoint string) error {
 	}*/
 	return nil
 
+}
+
+func (opc *OPCUAService) CommandController() {
+	for {
+		select {
+		case data := <-opc.fromCommandToOpcuaChan:
+			go func() {
+				switch v := data.(type) {
+				case client.GetOpcUaNodeTransfer:
+					data, err := opc.GetNodes(v.Namespace, v.IID, v.SID)
+					if err != nil {
+						log.Printf("OPCUA Command controller has errod: %s", err.Error())
+						v.Cancel()
+						return
+					}
+					v.ResponseChan <- data
+				case client.GetOpcUaNodeDescriptionTransfer:
+					node := opc.GetNodeBySID(v.Namespace, v.SID)
+					dataType, description, err := opc.GetNodeDescription(node)
+					if err != nil {
+						v.Cancel()
+					}
+					var transfer client.NodeDescriptionTransfer
+					transfer.DataType = dataType
+					transfer.Description = description
+					v.ResponseChan <- transfer
+
+				}
+			}()
+		}
+	}
 }
 
 /*func (opc *OPCUAService) router(data any) {

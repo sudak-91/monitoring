@@ -26,14 +26,12 @@ func main() {
 		}
 	}
 	MainCTX := context.Background()
-	//updateToClientChan := make(chan any, 5)
-	updateToOpcUaChan := make(chan any, 6)
 	opcuaChan := make(chan any, 5)
-	//clientChan := make(chan any, 5)
-	opcuaservice := opcuaservice.NewOpcUaService(MainCTX, opcuaChan, updateToOpcUaChan)
+	commandToOpcUaTransferChan := make(chan any, 5)
+	opcuaservice := opcuaservice.NewOpcUaService(MainCTX, opcuaChan, commandToOpcUaTransferChan)
 	opcuaservice.StartOPCUA(os.Getenv("OPCUA_Server"))
 	log.Println("Create Web Service")
-	clientService := clientservice.NewClientService(MainCTX, opcuaservice)
+	clientService := clientservice.NewClientService(MainCTX, commandToOpcUaTransferChan)
 	webService := webserver.NewWebService(MainCTX, clientService)
 	log.Println("Create Update Service")
 	go webService.Run()
