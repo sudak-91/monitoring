@@ -74,18 +74,6 @@ func (opc *OPCUAService) StartOPCUA(endpoint string) error {
 	}
 	log.Println("OPC UA Server start")
 	go opc.CommandController()
-	//defer opc.c.CloseWithContext(opc.ctx)
-	//@TODO: Пока заблокированный цикл
-	/*for {
-		select {
-		case data := <-opc.updateChan:
-			log.Println("new update")
-			opc.router(data)
-		default:
-			continue
-
-		}
-	}*/
 	return nil
 
 }
