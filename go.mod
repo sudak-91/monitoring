@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gopcua/opcua v0.3.11
 	github.com/pkg/errors v0.9.1
-	github.com/sudak-91/wasmhtml v0.0.0-20230611180140-be6050c4991c
+	github.com/sudak-91/wasmhtml v0.0.0-20230618144834-edfd8b9a6ca9
 	nhooyr.io/websocket v1.8.7
 )
 

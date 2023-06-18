@@ -215,6 +215,12 @@ github.com/sudak-91/wasmhtml v0.0.0-20230415161406-f1e38054301c h1:J77knLAoRb22n
 github.com/sudak-91/wasmhtml v0.0.0-20230415161406-f1e38054301c/go.mod h1:EvlsLfd4R46kZegZwmPkaac0dh/EAxcsTXUNcN69f8k=
 github.com/sudak-91/wasmhtml v0.0.0-20230611180140-be6050c4991c h1:9n46ZfQzDw6rfKyHmP5LVFbkgbjlP6Wwl392YnZtuIY=
 github.com/sudak-91/wasmhtml v0.0.0-20230611180140-be6050c4991c/go.mod h1:EvlsLfd4R46kZegZwmPkaac0dh/EAxcsTXUNcN69f8k=
+github.com/sudak-91/wasmhtml v0.0.0-20230618114658-782b8d01106a h1:nZeCHh6dticaI5p9hJLbPRqAdfK45Nu6IfA6SvwKoVk=
+github.com/sudak-91/wasmhtml v0.0.0-20230618114658-782b8d01106a/go.mod h1:EvlsLfd4R46kZegZwmPkaac0dh/EAxcsTXUNcN69f8k=
+github.com/sudak-91/wasmhtml v0.0.0-20230618142742-ce8c22f31df1 h1:7CT6wsBygvayUMrVMLG+bQAjxYhKcUAOW3qxf28HvxQ=
+github.com/sudak-91/wasmhtml v0.0.0-20230618142742-ce8c22f31df1/go.mod h1:EvlsLfd4R46kZegZwmPkaac0dh/EAxcsTXUNcN69f8k=
+github.com/sudak-91/wasmhtml v0.0.0-20230618144834-edfd8b9a6ca9 h1:nEgQ5m/XcyYv+o8AE2Vzaru3wkwTQGPGSc2tNCwYzjg=
+github.com/sudak-91/wasmhtml v0.0.0-20230618144834-edfd8b9a6ca9/go.mod h1:EvlsLfd4R46kZegZwmPkaac0dh/EAxcsTXUNcN69f8k=
 github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go/codec v1.1.7 h1:2SvQaVZ1ouYrrKKwoSk2pzd4A9evlKJb9oTL+OaLUSs=

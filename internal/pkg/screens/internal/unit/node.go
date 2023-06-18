@@ -1,6 +1,8 @@
 package unit
 
 import (
+	"log"
+	"strings"
 	"syscall/js"
 
 	update "github.com/sudak-91/monitoring/pkg/message/update"
@@ -12,6 +14,7 @@ type NodeUnit struct {
 	unit      *element.Div
 	actiondiv *element.Div
 	titile    *element.Div
+	checkbox  *element.Input
 }
 
 func NewNodeUnit(parent *element.Div, nodeDef update.NodeDef, folderFunc js.Func, dataFunc js.Func) *NodeUnit {
@@ -45,6 +48,10 @@ func NewNodeUnit(parent *element.Div, nodeDef update.NodeDef, folderFunc js.Func
 	`)
 	u.addTitle(nodeDef.Name)
 	u.setAttributes(nodeDef.Name, nodeDef.Namespace, nodeDef.IID, nodeDef.SID)
+	u.checkbox = u.unit.AddInput()
+	u.checkbox.SetType("checkbox")
+	wasmhtml.AddClass(u.checkbox.Object, "nodeSelector")
+	wasmhtml.AddClickEventListenr(u.checkbox.Object, js.FuncOf(EnableCheckBox))
 	return &u
 }
 
@@ -69,4 +76,39 @@ func (n *NodeUnit) GetParentDiv() *element.Div {
 
 func (n *NodeUnit) AddClass(class string) {
 	n.unit.AddClass(class)
+}
+
+func selectChildren(object js.Value) (js.Value, error) {
+	childrenArr, err := wasmhtml.GetChildren(object)
+	if err != nil {
+		return js.Value{}, err
+	}
+	return childrenArr, nil
+}
+
+func enableCheckBox(object js.Value) any {
+	children, err := selectChildren(object)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	log.Println(children.Length())
+	for i := 0; i < children.Length(); i++ {
+		obj := children.Index(i)
+		className := strings.Split(obj.Get("className").String(), " ")
+		switch className[0] {
+		case "nodeSelector":
+			log.Println("Node Selector")
+			wasmhtml.Set(obj, "checked", "true")
+			wasmhtml.SetAttribute(obj, "checked", "true")
+		case "node":
+			enableCheckBox(obj)
+		}
+	}
+	return nil
+}
+
+func EnableCheckBox(this js.Value, args []js.Value) any {
+	parent, _ := wasmhtml.GetParent(this)
+	enableCheckBox(parent)
+	return nil
 }

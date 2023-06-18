@@ -9,7 +9,7 @@ import (
 
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/ua"
-	opcuaservice "github.com/sudak-91/monitoring/pkg/server/opcua_service"
+	opcuaservice "github.com/sudak-91/monitoring/pkg/opcua_service"
 )
 
 type HightLevel struct {
