@@ -1,7 +1,6 @@
 package opcuaservice
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gopcua/opcua"
@@ -26,55 +25,19 @@ func (opc *OPCUAService) GetNodes(ns uint16, id uint32, sid string) (update.OPCN
 		nodeID = ua.NewStringNodeID(ns, sid)
 	}
 	node := opc.OPCLient.Node(nodeID)
-	organizesNodes, err := opc.GetOrganizesNodes(node)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	for _, v := range organizesNodes {
-		node := CreateNode(v)
-		fmt.Printf(consoleColor, "[OrganizesNode]")
-		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
-		NodeType, err := opc.GetNodeDataType(v)
-		if err == nil {
-			log.Printf("AddNodeType: %d", NodeType)
-			node.NodeType = NodeType
-		}
+	orgNodes, compNodes, propNodes, _ := opc.getNodes(node, 0)
+
+	for _, node := range orgNodes {
 		NodeList.AddOrganizeNode(node)
-
 	}
-
-	componentNodes, err := opc.GetHasComponentNodes(node)
-	if err != nil {
-		log.Println(err.Error())
-
-	}
-	for _, v := range componentNodes {
-		node := CreateNode(v)
-		fmt.Printf(consoleColor, "[ComponentNode]")
-		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
-		NodeType, err := opc.GetNodeDataType(v)
-		if err == nil {
-			log.Printf("AddNodeType: %d", NodeType)
-			node.NodeType = NodeType
-		}
+	for _, node := range compNodes {
 		NodeList.AddComponentNode(node)
 	}
-	propertyNodes, err := opc.GetHasPropertyNodes(node)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	for _, v := range propertyNodes {
-		node := CreateNode(v)
-		fmt.Printf(consoleColor, "[PropertyNode]")
-		log.Printf("Namespace = %d\t ID = %d\t ID(String) = %s\t Name = %s\n", node.Namespace, node.IID, node.SID, node.Name)
-		NodeType, err := opc.GetNodeDataType(v)
-		if err == nil {
-			node.NodeType = NodeType
-		}
+	for _, node := range propNodes {
 		NodeList.AddPropertyNode(node)
-
 	}
 	return NodeList, nil
+
 }
 
 func (opc *OPCUAService) GetOrganizesNodes(node *opcua.Node) ([]*opcua.Node, error) {
