@@ -68,30 +68,31 @@ func (n *NodeBrowser) Update(data any) {
 	switch upd := data.(type) {
 	case *update.OPCNodes:
 		var (
-			organizeNodeDiv  *element.Div
-			componentNodeDiv *element.Div
-			propertyNodeDiv  *element.Div
+			organizeNodeDiv *element.Div
+			// componentNodeDiv *element.Div
+			// propertyNodeDiv  *element.Div
 		)
 		log.Println("[MainScreen]Update|OPCNodes")
 		if len(upd.Nodes.OrganizesNode) != 0 {
 			organizeNodeDiv = n.createMainNodeDiv("organizeNode")
 		}
 
-		if len(upd.Nodes.ComponentNode) != 0 {
-			componentNodeDiv = n.createMainNodeDiv("componentNode")
-		}
-		if len(upd.Nodes.PropertyNode) != 0 {
-			propertyNodeDiv = n.createMainNodeDiv("propertyNode")
-		}
-		for _, v := range upd.Nodes.OrganizesNode {
-			n.createNodeUnit(organizeNodeDiv, v)
-		}
-		for _, v := range upd.Nodes.ComponentNode {
-			n.createNodeUnit(componentNodeDiv, v)
-		}
-		for _, v := range upd.Nodes.PropertyNode {
-			n.createNodeUnit(propertyNodeDiv, v)
-		}
+		// if len(upd.Nodes.ComponentNode) != 0 {
+		// 	componentNodeDiv = n.createMainNodeDiv("componentNode")
+		// }
+		// if len(upd.Nodes.PropertyNode) != 0 {
+		// 	propertyNodeDiv = n.createMainNodeDiv("propertyNode")
+		// }
+
+		n.createNodeDiv(organizeNodeDiv, upd.Nodes)
+
+		// for _, v := range upd.Nodes.ComponentNode {
+		// 	n.createNodeUnit(componentNodeDiv, v)
+		// }
+		// for _, v := range upd.Nodes.PropertyNode {
+		// 	n.createNodeUnit(propertyNodeDiv, v)
+		// }
+
 		n.Parent.Generate()
 		return
 	case *update.SubNodes:
@@ -104,15 +105,7 @@ func (n *NodeBrowser) Update(data any) {
 			log.Println("parent element is not div")
 			return
 		}
-		for _, v := range upd.Nodes.OrganizesNode {
-			n.createNodeUnit(parent, v)
-		}
-		for _, v := range upd.Nodes.ComponentNode {
-			n.createNodeUnit(parent, v)
-		}
-		for _, v := range upd.Nodes.PropertyNode {
-			n.createNodeUnit(parent, v)
-		}
+
 		parent.Generate()
 		return
 	case *update.NodeDescription:
@@ -121,6 +114,24 @@ func (n *NodeBrowser) Update(data any) {
 	}
 }
 
+func (n *NodeBrowser) createNodeDiv(parent *element.Div, nodes *update.OPCNode) {
+	for _, v := range nodes.OrganizesNode {
+		n.createNodeUnit(parent, v)
+		parDiv, _ := n.DOMModel[v.Name].(*element.Div)
+		n.createNodeDiv(parDiv, &v.ChildNode)
+	}
+	for _, v := range nodes.ComponentNode {
+		n.createNodeUnit(parent, v)
+		parDiv, _ := n.DOMModel[v.Name].(*element.Div)
+		n.createNodeDiv(parDiv, &v.ChildNode)
+	}
+	for _, v := range nodes.PropertyNode {
+		n.createNodeUnit(parent, v)
+		parDiv, _ := n.DOMModel[v.Name].(*element.Div)
+		n.createNodeDiv(parDiv, &v.ChildNode)
+	}
+	parent.Generate()
+}
 func (n *NodeBrowser) GetValue(this js.Value, args []js.Value) any {
 	parent := this.Get("parentElement")
 	idRaw := parent.Call("getAttribute", "opcid")
@@ -187,5 +198,7 @@ func (n *NodeBrowser) createNodeUnit(parentNode *element.Div, v update.NodeDef) 
 	folderFunc := js.FuncOf(n.GetValue)
 	nodeFunc := js.FuncOf(n.GetNodeDescription)
 	elem := unit.NewNodeUnit(parentNode, v, folderFunc, nodeFunc)
+
 	n.DOMModel[v.Name] = elem.GetParentDiv()
+
 }

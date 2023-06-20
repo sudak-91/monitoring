@@ -7,7 +7,7 @@ type Updates interface {
 
 // OPCNodeType
 type NodeDef struct {
-	ChildNode []*NodeDef
+	ChildNode OPCNode
 	Name      string //OPC Node browser name
 	IID       uint32 //OPC ID ex:"i=%d"
 	SID       string //OPC ID ex:"s=%s"

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"testing"
+	"unsafe"
 
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/ua"
+	update "github.com/sudak-91/monitoring/pkg/message/update"
 	opcuaservice "github.com/sudak-91/monitoring/pkg/opcua_service"
 )
 
@@ -16,7 +18,7 @@ type HightLevel struct {
 }
 
 func (h *HightLevel) Error() string {
-	return fmt.Sprintf("Hight level")
+	return fmt.Sprintln("Hight level")
 }
 
 var (
@@ -35,30 +37,34 @@ func TestGetDataValuesNode(t *testing.T) {
 		opcuChan   chan interface{}
 		updateChan chan interface{}
 	)
+
 	opcuaService := opcuaservice.NewOpcUaService(context.TODO(), opcuChan, updateChan)
 	opcuaService.StartOPCUA("opc.tcp://192.168.1.225:4840")
 	defer opcuaService.OPCLient.Close()
 	RootNodes, err := opcuaService.GetNodes(0, 84, "")
 	if err != nil {
-		t.Error(err.Error())
+		log.Println("This Error")
+		t.Error(err)
 	}
-	for _, v := range RootNodes.OrganizesNode {
+	log.Printf("%d\n", unsafe.Sizeof(RootNodes))
+	opcuaNodeIterato(RootNodes)
 
-		log.Printf("[Root]ID: %d \t Namespace: %d \t Name: %s \n", v.IID, v.Namespace, v.Name)
-		NodeID := ua.NewNumericNodeID(v.Namespace, v.IID)
-		Node := opcuaService.OPCLient.Node(NodeID)
-		t.Log(Node.ID.String())
-		err := subNodes(opcuaService, Node, 0)
-		switch {
-		case errors.Is(err, &HightLevel{}):
-			log.Println(err)
-			continue
-		case err != nil:
-			log.Printf("[Error]| %s\n", err.Error())
-			t.Fail()
-		}
+}
 
+func opcuaNodeIterato(node update.OPCNode) {
+	for _, v := range node.OrganizesNode {
+		log.Println(v.Name)
+		opcuaNodeIterato(v.ChildNode)
 	}
+	for _, v := range node.ComponentNode {
+		log.Println(v.Name)
+		opcuaNodeIterato(v.ChildNode)
+	}
+	for _, v := range node.PropertyNode {
+		log.Println(v.Name)
+		opcuaNodeIterato(v.ChildNode)
+	}
+	return
 
 }
 

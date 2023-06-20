@@ -9,6 +9,7 @@ import (
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"github.com/sudak-91/monitoring/pkg/client"
 )
 
@@ -79,6 +80,9 @@ func (opc *OPCUAService) StartOPCUA(endpoint string) error {
 }
 
 func (opc *OPCUAService) CommandController() {
+	if viper.GetBool("Debug") {
+		log.Println("OPCUA Command Controller is Run")
+	}
 	for {
 		select {
 		case data := <-opc.fromCommandToOpcuaChan:
